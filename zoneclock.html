@@ -214,12 +214,70 @@
   .clock-time .ampm { font-size: 13px; color: var(--muted); margin-left: 3px; }
   .clock-date { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); margin-top: 4px; }
 
+  .card-actions { display: flex; flex-direction: column; gap: 4px; flex-shrink: 0; align-items: center; }
+
   .remove-btn {
     background: none; border: none; cursor: pointer; color: var(--muted);
     font-size: 20px; padding: 4px 6px; border-radius: 6px; flex-shrink: 0;
     line-height: 1; transition: color 0.18s, background 0.18s;
   }
   .remove-btn:hover { color: var(--danger); background: rgba(240,96,96,0.1); }
+
+  .set-home-btn {
+    background: none; border: none; cursor: pointer; color: var(--muted);
+    font-size: 11px; font-family: 'DM Mono', monospace; letter-spacing: 0.3px;
+    padding: 3px 6px; border-radius: 5px; white-space: nowrap;
+    transition: color 0.18s, background 0.18s; line-height: 1.4;
+  }
+  .set-home-btn:hover { color: var(--accent); background: rgba(200,240,96,0.1); }
+
+  .change-home-btn {
+    background: none; border: 1px solid rgba(200,240,96,0.25); cursor: pointer;
+    color: var(--accent); font-size: 10px; font-family: 'DM Mono', monospace;
+    padding: 3px 8px; border-radius: 5px; letter-spacing: 0.3px;
+    transition: background 0.18s; line-height: 1.4; white-space: nowrap;
+  }
+  .change-home-btn:hover { background: rgba(200,240,96,0.12); }
+
+  /* Home picker modal */
+  .home-modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.72); z-index: 300;
+    display: none; align-items: center; justify-content: center; padding: 20px;
+    backdrop-filter: blur(6px);
+  }
+  .home-modal-overlay.show { display: flex; }
+  .home-modal {
+    background: var(--surface2); border: 1px solid rgba(200,240,96,0.18);
+    border-radius: 20px; padding: 32px 28px; max-width: 400px; width: 100%;
+    animation: popIn 0.28s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  .home-modal h3 { font-size: 18px; font-weight: 800; margin-bottom: 6px; }
+  .home-modal p { font-size: 13px; color: var(--muted); margin-bottom: 18px; line-height: 1.5; }
+  .home-search-wrap { position: relative; margin-bottom: 10px; }
+  .home-search {
+    width: 100%; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; color: var(--text); font-family: 'Syne', sans-serif;
+    font-size: 14px; padding: 10px 14px 10px 36px; outline: none;
+    transition: border-color 0.2s;
+  }
+  .home-search::placeholder { color: var(--muted); }
+  .home-search:focus { border-color: rgba(255,255,255,0.2); }
+  .home-search-icon {
+    position: absolute; left: 11px; top: 50%; transform: translateY(-50%);
+    width: 15px; height: 15px; color: var(--muted); pointer-events: none;
+  }
+  .home-zone-list { max-height: 240px; overflow-y: auto; border-radius: 10px; border: 1px solid var(--border); }
+  .home-zone-item {
+    padding: 10px 14px; cursor: pointer; font-size: 14px;
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid var(--border); transition: background 0.12s;
+  }
+  .home-zone-item:last-child { border-bottom: none; }
+  .home-zone-item:hover { background: rgba(200,240,96,0.07); }
+  .home-zone-item.current { color: var(--accent); font-weight: 600; }
+  .home-zone-item .hz-code { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); }
+  .home-modal-cancel { display: block; text-align: center; margin-top: 14px; font-size: 13px; color: var(--muted); cursor: pointer; transition: color 0.18s; }
+  .home-modal-cancel:hover { color: var(--text); }
 
   .empty-state { text-align: center; padding: 56px 20px; color: var(--muted); font-size: 14px; }
   .empty-icon { font-size: 40px; margin-bottom: 10px; }
@@ -325,6 +383,22 @@
   <div class="clocks" id="clocksContainer"></div>
 </div>
 
+<!-- Home timezone picker modal -->
+<div class="home-modal-overlay" id="homeModalOverlay" onclick="if(event.target===this)hideHomeModal()">
+  <div class="home-modal">
+    <h3>Change home timezone</h3>
+    <p>Pick the city that represents your home clock.</p>
+    <div class="home-search-wrap">
+      <svg class="home-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input class="home-search" id="homeSearch" placeholder="Search city…" oninput="renderHomeList()" autocomplete="off"/>
+    </div>
+    <div class="home-zone-list" id="homeZoneList"></div>
+    <span class="home-modal-cancel" onclick="hideHomeModal()">Cancel</span>
+  </div>
+</div>
+
 <!-- Upgrade modal -->
 <div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)hideModal()">
   <div class="modal">
@@ -347,7 +421,9 @@
 </div>
 
 <script>
-/* ── Data ── */
+/* ─────────────────────────────────────────
+   DATA
+───────────────────────────────────────── */
 const ZONES = [
   { label:"New York", tz:"America/New_York" },
   { label:"London", tz:"Europe/London" },
@@ -493,80 +569,204 @@ function getClockAngles(tz) {
   return { hour: hh*30 + mm*0.5, min: mm*6, sec: ss*6 };
 }
 
-function makeSVGClock(tz, isHome) {
-  const { hour, min, sec } = getClockAngles(tz);
-  const accent = isHome ? '#c8f060' : '#6077f0';
-  const cx = 25, cy = 25, r = 23;
-  const rad = a => a * Math.PI / 180;
-  const pt = (cx, cy, a, len) => [cx + Math.sin(rad(a))*len, cy - Math.cos(rad(a))*len];
-  const [hx,hy] = pt(cx,cy,hour,12);
-  const [mx,my] = pt(cx,cy,min,17);
-  const [sx,sy] = pt(cx,cy,sec,20);
-  const circ = 2*Math.PI*r;
-  const dashLen = circ * (sec/60);
-  return `<svg viewBox="0 0 50 50" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="${cx}" cy="${cy}" r="${r}" stroke="rgba(255,255,255,0.07)" stroke-width="1.5" fill="none"/>
-    <circle cx="${cx}" cy="${cy}" r="${r}" stroke="${accent}" stroke-width="1.5" fill="none" stroke-dasharray="${dashLen} ${circ}" stroke-linecap="round" opacity="0.25" transform="rotate(-90 ${cx} ${cy})"/>
-    <line x1="${cx}" y1="${cy}" x2="${hx}" y2="${hy}" stroke="${accent}" stroke-width="2.5" stroke-linecap="round"/>
-    <line x1="${cx}" y1="${cy}" x2="${mx}" y2="${my}" stroke="rgba(240,240,248,0.85)" stroke-width="1.5" stroke-linecap="round"/>
-    <line x1="${cx}" y1="${cy}" x2="${sx}" y2="${sy}" stroke="${accent}" stroke-width="1" stroke-linecap="round" opacity="0.65"/>
-    <circle cx="${cx}" cy="${cy}" r="2.5" fill="${accent}"/>
-  </svg>`;
+
+
+/* ─────────────────────────────────────────
+   RENDER — build once, update in place
+───────────────────────────────────────── */
+
+/* Build the full card HTML (called only when structure changes) */
+function buildClockHTML(z, i) {
+  const tzShort = z.tz.split('/').pop().replace(/_/g,' ');
+  const offset  = getOffset(z.tz);
+  return `<div class="clock-card${z.home?' home':''}"
+      draggable="true"
+      id="card-${i}"
+      ondragstart="dragStart(event,${i})"
+      ondragover="dragOver(event,${i})"
+      ondrop="dragDrop(event,${i})"
+      ondragend="dragEnd(event)"
+    >
+    <div class="day-band" id="day-${i}"></div>
+    <div class="drag-handle" title="Drag to reorder">
+      <span></span><span></span><span></span>
+    </div>
+    <div class="clock-analog" id="ana-${i}"></div>
+    <div class="clock-info">
+      <div class="clock-city">
+        ${z.label}
+        ${z.home ? '<span class="home-tag">HOME</span>' : ''}
+      </div>
+      <div class="clock-tz">${tzShort} · ${offset}</div>
+    </div>
+    <div class="clock-time-wrap">
+      <div class="clock-time" id="time-${i}"></div>
+      <div class="clock-date" id="date-${i}"></div>
+    </div>
+    <div class="card-actions">
+      ${z.home
+        ? `<button class="change-home-btn" onclick="showHomeModal()" title="Change home timezone">✎ home</button>`
+        : `<button class="remove-btn" onclick="removeZone(${i})" title="Remove">×</button>
+           <button class="set-home-btn" onclick="setHome(${i})" title="Set as home">set home</button>`
+      }
+    </div>
+  </div>`;
 }
 
-/* ── Render ── */
+/* Rebuild DOM structure only when zone list changes */
 function renderClocks() {
   const container = document.getElementById('clocksContainer');
   if (userZones.length === 0) {
     container.innerHTML = `<div class="empty-state"><div class="empty-icon">🕐</div>No clocks yet — search a city above.</div>`;
     return;
   }
-  container.innerHTML = userZones.map((z, i) => {
+
+  /* Check if we need a full rebuild (count or identity changed) */
+  const needsRebuild = container.children.length !== userZones.length ||
+    userZones.some((z, i) => {
+      const card = document.getElementById('card-'+i);
+      return !card || card.dataset.tz !== z.tz || card.dataset.home !== String(z.home);
+    });
+
+  if (needsRebuild) {
+    container.innerHTML = userZones.map(buildClockHTML).join('');
+    userZones.forEach((z, i) => {
+      const card = document.getElementById('card-'+i);
+      if (card) { card.dataset.tz = z.tz; card.dataset.home = String(z.home); }
+    });
+  }
+
+  /* Always update dynamic content in-place (no DOM replacement = no blink) */
+  userZones.forEach((z, i) => {
+    const timeEl = document.getElementById('time-'+i);
+    const dateEl = document.getElementById('date-'+i);
+    const anaEl  = document.getElementById('ana-'+i);
+    const dayEl  = document.getElementById('day-'+i);
+    if (!timeEl) return;
+
     const { time, secs, ampm } = formatDisplayTime(z.tz);
-    const date = formatDate(z.tz);
-    const offset = getOffset(z.tz);
-    const dayLabel = getDayLabel(z.tz);
-    const tzShort = z.tz.split('/').pop().replace(/_/g,' ');
-    return `<div class="clock-card${z.home?' home':''}"
-        draggable="true"
-        id="card-${i}"
-        ondragstart="dragStart(event,${i})"
-        ondragover="dragOver(event,${i})"
-        ondrop="dragDrop(event,${i})"
-        ondragend="dragEnd(event)"
-      >
-      ${dayLabel ? `<div class="day-band">${dayLabel}</div>` : ''}
-      <div class="drag-handle" title="Drag to reorder">
-        <span></span><span></span><span></span>
-      </div>
-      <div class="clock-analog">${makeSVGClock(z.tz, z.home)}</div>
-      <div class="clock-info">
-        <div class="clock-city">
-          ${z.label}
-          ${z.home ? '<span class="home-tag">HOME</span>' : ''}
-        </div>
-        <div class="clock-tz">${tzShort} · ${offset}</div>
-      </div>
-      <div class="clock-time-wrap">
-        <div class="clock-time">${time}<span class="secs">${secs}</span>${ampm ? `<span class="ampm">${ampm}</span>` : ''}</div>
-        <div class="clock-date">${date}</div>
-      </div>
-      ${!z.home ? `<button class="remove-btn" onclick="removeZone(${i})" title="Remove">×</button>` : ''}
-    </div>`;
-  }).join('');
+    const newTimeHTML = `${time}<span class="secs">${secs}</span>${ampm?`<span class="ampm">${ampm}</span>`:''}`;
+    if (timeEl.innerHTML !== newTimeHTML) timeEl.innerHTML = newTimeHTML;
+
+    const newDate = formatDate(z.tz);
+    if (dateEl.textContent !== newDate) dateEl.textContent = newDate;
+
+    const newDay = getDayLabel(z.tz);
+    if (dayEl.textContent !== newDay) dayEl.textContent = newDay;
+
+    /* Analog clock: update SVG hands without replacing the whole element */
+    updateAnalogClock(anaEl, z.tz, z.home);
+  });
+}
+
+/* Update only the SVG hand positions (no full re-render = no flicker) */
+function updateAnalogClock(container, tz, isHome) {
+  const accent = isHome ? '#c8f060' : '#6077f0';
+  const { hour, min, sec } = getClockAngles(tz);
+  const cx = 25, cy = 25, r = 23;
+  const rad = a => a * Math.PI / 180;
+  const pt  = (a, len) => [cx + Math.sin(rad(a))*len, cy - Math.cos(rad(a))*len];
+  const [hx,hy] = pt(hour,12);
+  const [mx,my] = pt(min,17);
+  const [sx,sy] = pt(sec,20);
+  const circ    = 2*Math.PI*r;
+  const dashLen = circ*(sec/60);
+
+  /* First render: inject SVG */
+  if (!container.querySelector('svg')) {
+    container.innerHTML = `<svg viewBox="0 0 50 50" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="${cx}" cy="${cy}" r="${r}" stroke="rgba(255,255,255,0.07)" stroke-width="1.5" fill="none"/>
+      <circle id="arc" cx="${cx}" cy="${cy}" r="${r}" stroke="${accent}" stroke-width="1.5" fill="none"
+        stroke-dasharray="${dashLen} ${circ}" stroke-linecap="round" opacity="0.25"
+        transform="rotate(-90 ${cx} ${cy})"/>
+      <line id="hh" x1="${cx}" y1="${cy}" x2="${hx}" y2="${hy}" stroke="${accent}" stroke-width="2.5" stroke-linecap="round"/>
+      <line id="mh" x1="${cx}" y1="${cy}" x2="${mx}" y2="${my}" stroke="rgba(240,240,248,0.85)" stroke-width="1.5" stroke-linecap="round"/>
+      <line id="sh" x1="${cx}" y1="${cy}" x2="${sx}" y2="${sy}" stroke="${accent}" stroke-width="1" stroke-linecap="round" opacity="0.65"/>
+      <circle cx="${cx}" cy="${cy}" r="2.5" fill="${accent}"/>
+    </svg>`;
+    return;
+  }
+  /* Subsequent renders: mutate attributes only */
+  const svg = container.querySelector('svg');
+  const set = (id, attrs) => { const el = svg.getElementById(id); if(el) Object.entries(attrs).forEach(([k,v]) => el.setAttribute(k,v)); };
+  set('arc', { 'stroke-dasharray': `${dashLen} ${circ}` });
+  set('hh',  { x2: hx, y2: hy });
+  set('mh',  { x2: mx, y2: my });
+  set('sh',  { x2: sx, y2: sy });
 }
 
 function renderWorldBar() {
   const el = document.getElementById('worldCities');
-  el.innerHTML = WORLD_BAR_ZONES.map(city => {
+  WORLD_BAR_ZONES.forEach(city => {
     const zone = ZONES.find(z => z.label === city);
-    if (!zone) return '';
+    if (!zone) return;
     const { time, ampm } = formatDisplayTime(zone.tz);
-    return `<div class="world-city">
-      <div class="world-city-name">${city.split(' ')[0].toUpperCase()}</div>
-      <div class="world-city-time">${time}${ampm ? ' '+ampm : ''}</div>
+    const slug = city.replace(/\s/g,'-');
+    let wc = document.getElementById('wc-'+slug);
+    if (!wc) {
+      el.innerHTML = WORLD_BAR_ZONES.map(c => {
+        const s = c.replace(/\s/g,'-');
+        return `<div class="world-city" id="wc-${s}">
+          <div class="world-city-name">${c.split(' ')[0].toUpperCase()}</div>
+          <div class="world-city-time" id="wct-${s}"></div>
+        </div>`;
+      }).join('');
+    }
+    const tEl = document.getElementById('wct-'+slug);
+    if (tEl) tEl.textContent = time + (ampm ? ' '+ampm : '');
+  });
+}
+
+/* ─────────────────────────────────────────
+   HOME TIMEZONE CHANGE
+───────────────────────────────────────── */
+function showHomeModal() {
+  document.getElementById('homeSearch').value = '';
+  renderHomeList();
+  document.getElementById('homeModalOverlay').classList.add('show');
+  setTimeout(() => document.getElementById('homeSearch').focus(), 80);
+}
+function hideHomeModal() { document.getElementById('homeModalOverlay').classList.remove('show'); }
+
+function renderHomeList() {
+  const q = document.getElementById('homeSearch').value.trim().toLowerCase();
+  const homeZone = userZones.find(z => z.home);
+  const list = document.getElementById('homeZoneList');
+  const filtered = ZONES.filter(z =>
+    !q || z.label.toLowerCase().includes(q) || z.tz.toLowerCase().replace(/_/g,' ').includes(q)
+  );
+  list.innerHTML = filtered.map(z => {
+    const isCurrent = homeZone && homeZone.tz === z.tz;
+    const tzShort = z.tz.split('/').pop().replace(/_/g,' ');
+    return `<div class="home-zone-item${isCurrent?' current':''}" onclick="applyHomeZone('${z.tz}','${z.label.replace(/'/,"\\'") }')">
+      <span>${z.label}${isCurrent ? ' ✓' : ''}</span>
+      <span class="hz-code">${tzShort} · ${getOffset(z.tz)}</span>
     </div>`;
-  }).join('');
+  }).join('') || `<div style="padding:14px;text-align:center;color:var(--muted);font-size:13px">No results</div>`;
+}
+
+function applyHomeZone(tz, label) {
+  /* Remove any existing zone with this tz (avoid duplicates) */
+  userZones = userZones.filter(z => z.tz !== tz);
+  /* Clear old home flag */
+  userZones.forEach(z => z.home = false);
+  /* Insert new home at top */
+  userZones.unshift({ label, tz, home: true });
+  hideHomeModal();
+  renderClocks();
+  updateUI();
+}
+
+function setHome(i) {
+  const zone = userZones[i];
+  if (!zone || zone.home) return;
+  userZones.forEach(z => z.home = false);
+  zone.home = true;
+  /* Move to top */
+  userZones.splice(i, 1);
+  userZones.unshift(zone);
+  renderClocks();
+  updateUI();
 }
 
 /* ── Search & dropdown ── */
@@ -704,11 +904,24 @@ function updateUI() {
   btn.title = atLimit ? 'Upgrade to add more zones' : '';
 }
 
-/* ── Init & tick ── */
+/* ─────────────────────────────────────────
+   INIT & SMOOTH TICK (requestAnimationFrame)
+───────────────────────────────────────── */
 renderClocks();
 renderWorldBar();
 updateUI();
-setInterval(() => { renderClocks(); renderWorldBar(); }, 1000);
+
+let lastSec = -1;
+function tick() {
+  const s = new Date().getSeconds();
+  if (s !== lastSec) {
+    lastSec = s;
+    renderClocks();
+    renderWorldBar();
+  }
+  requestAnimationFrame(tick);
+}
+requestAnimationFrame(tick);
 </script>
 </body>
 </html>
