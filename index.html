@@ -1,630 +1,1364 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>ZoneClock — World Time Zones</title>
-  
-  <!-- PWA & Mobile Web Capabilities -->
-  <link rel="manifest" href="./manifest.json">
-  <meta name="theme-color" content="#0a0a0f">
-  
-  <!-- iOS Safari Specific Fixes -->
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="ZoneClock">
-  
-  <!-- App Icons -->
-  <link rel="apple-touch-icon" href="./icon-180.png">
-  <link rel="apple-touch-icon" sizes="152x152" href="./icon-180.png">
-  <link rel="apple-touch-icon" sizes="167x167" href="./icon-180.png">
-  <link rel="apple-touch-icon" sizes="180x180" href="./icon-180.png">
-  <link rel="icon" type="image/png" sizes="32x32" href="./icon-32.png">
-  <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>ZoneClock — World Time Zones</title>
 
-  <!-- Google Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0a0a0f">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ZoneClock">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" sizes="32x32" href="icon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 
-  <style>
-    :root {
-      --bg-color: #0a0a0f;
-      --surface-color: #12121e;
-      --surface-hover: #1a1a2e;
-      --border-color: #22223b;
-      --text-color: #f8f9fa;
-      --text-secondary: #8d99ae;
-      --accent-color: #6366f1;
-      --accent-glow: rgba(99, 102, 241, 0.15);
-      --danger-color: #ef4444;
-      --success-color: #10b981;
-    }
+<meta name="description" content="Live world clocks, alarms, and time zone converter. Free and works offline.">
+<meta property="og:title" content="ZoneClock — World Time Zones">
+<meta property="og:description" content="Live world clocks, alarms, and time zone converter.">
+<meta property="og:type" content="website">
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: 'Inter', sans-serif;
-    }
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0a0a0f; --surface: #12121a; --surface2: #1a1a26;
+    --border: rgba(255,255,255,0.07); --border-hover: rgba(255,255,255,0.15);
+    --accent: #c8f060; --accent2: #6077f0; --text: #f0f0f8;
+    --muted: rgba(240,240,248,0.45); --danger: #f06060; --warn: #f0a060; --radius: 14px;
+    --font: 'Inter', system-ui, -apple-system, sans-serif;
+    --mono: 'JetBrains Mono', 'SF Mono', ui-monospace, monospace;
+  }
+  body { font-family: var(--font); background:var(--bg); color:var(--text); min-height:100vh; overflow-x:hidden; -webkit-font-smoothing:antialiased; }
+  .grid-bg { position:fixed; inset:0; z-index:0;
+    background-image: linear-gradient(rgba(255,255,255,0.022) 1px,transparent 1px), linear-gradient(90deg,rgba(255,255,255,0.022) 1px,transparent 1px);
+    background-size:44px 44px; pointer-events:none; }
+  .app { position:relative; z-index:1; max-width:800px; margin:0 auto; padding:36px 24px 80px; padding-top: max(36px, env(safe-area-inset-top, 36px)); padding-bottom: max(80px, calc(env(safe-area-inset-bottom, 0px) + 60px)); }
 
-    body {
-      background-color: var(--bg-color);
-      color: var(--text-color);
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      padding-bottom: 80px;
-    }
+  /* ── Header ── */
+  .header { display:flex; align-items:center; justify-content:space-between; margin-bottom:28px; flex-wrap:wrap; gap:12px; }
+  .logo { display:flex; align-items:center; gap:10px; }
+  .logo-dot { width:10px; height:10px; border-radius:50%; background:var(--accent); box-shadow:0 0 14px var(--accent); animation:pulse 2s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.55;transform:scale(0.8)} }
+  .logo-text { font-size:20px; font-weight:800; letter-spacing:-0.5px; }
+  .logo-text span { color:var(--accent); }
+  .header-controls { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .toggle-wrap { display:flex; background:var(--surface2); border:1px solid var(--border); border-radius:8px; overflow:hidden; }
+  .toggle-btn { font-family:var(--mono); font-size:11px; font-weight:500; padding:6px 12px; background:none; border:none; color:var(--muted); cursor:pointer; transition:background 0.18s,color 0.18s; letter-spacing:0.5px; }
+  .toggle-btn.active { background:var(--accent); color:#0a0a0f; }
+  .plan-badge { font-family:var(--mono); font-size:10px; padding:4px 12px; border-radius:20px; background:var(--surface2); border:1px solid var(--border); color:var(--muted); letter-spacing:0.8px; }
+  .plan-badge.premium { border-color:var(--accent); color:var(--accent); background:rgba(200,240,96,0.07); }
 
-    @supports (padding-bottom: env(safe-area-inset-bottom)) {
-      body {
-        padding-top: env(safe-area-inset-top);
-        padding-bottom: calc(80px + env(safe-area-inset-bottom));
-      }
-    }
+  /* ── Tabs ── */
+  .tabs { display:flex; gap:4px; margin-bottom:28px; background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:4px; }
+  .tab-btn { flex:1; padding:10px 8px; background:none; border:none; color:var(--muted); font-family:var(--font); font-size:13px; font-weight:600; cursor:pointer; border-radius:9px; transition:all 0.18s; display:flex; align-items:center; justify-content:center; gap:5px; white-space:nowrap; -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
+  .tab-btn:hover { color:var(--text); background:rgba(255,255,255,0.04); }
+  .tab-btn.active { background:var(--surface2); color:var(--text); box-shadow:0 2px 8px rgba(0,0,0,0.3); }
+  .tab-btn .tab-icon { font-size:15px; line-height:1; }
+  .tab-panel { display:none; }
+  .tab-panel.active { display:block; }
 
-    header {
-      padding: 1.25rem 1.5rem;
-      border-bottom: 1px solid var(--border-color);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background-color: rgba(10, 10, 15, 0.8);
-      backdrop-filter: blur(10px);
-      position: sticky;
-      top: 0;
-      z-index: 100;
-    }
+  /* ── World bar ── */
+  .world-bar { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:12px 16px; margin-bottom:24px; display:flex; align-items:center; gap:12px; overflow:hidden; }
+  .world-bar-label { font-family:var(--mono); font-size:9px; color:var(--muted); letter-spacing:1.2px; text-transform:uppercase; white-space:nowrap; }
+  .world-cities { display:flex; gap:0; overflow:hidden; flex:1; }
+  .world-city { display:flex; flex-direction:column; align-items:center; flex:1; min-width:0; }
+  .world-city-name { font-family:var(--mono); font-size:9px; color:var(--muted); letter-spacing:0.3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; width:100%; text-align:center; }
+  .world-city-time { font-family:var(--mono); font-size:12px; font-weight:500; }
 
-    .logo {
-      font-size: 1.25rem;
-      font-weight: 800;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
+  /* ── Add row ── */
+  .add-row { display:flex; gap:10px; margin-bottom:10px; }
+  .search-wrap { position:relative; flex:1; }
+  .search-icon { position:absolute; left:13px; top:50%; transform:translateY(-50%); width:16px; height:16px; color:var(--muted); pointer-events:none; }
+  .tz-search { width:100%; background:var(--surface); border:1px solid var(--border); border-radius:10px; color:var(--text); font-family:var(--font); font-size:16px; padding:12px 16px 12px 38px; outline:none; transition:border-color 0.2s; }
+  .tz-search::placeholder { color:var(--muted); }
+  .tz-search:focus { border-color:rgba(255,255,255,0.2); }
+  .add-btn { background:var(--accent); color:#0a0a0f; border:none; border-radius:10px; font-family:var(--font); font-weight:700; font-size:14px; padding:12px 22px; cursor:pointer; white-space:nowrap; transition:opacity 0.18s,transform 0.1s; }
+  .add-btn:hover { opacity:0.85; }
+  .add-btn:active { transform:scale(0.97); }
+  .add-btn:disabled { opacity:0.3; cursor:not-allowed; transform:none; }
+  .tz-dropdown { position:absolute; top:calc(100% + 6px); left:0; right:0; background:var(--surface2); border:1px solid var(--border-hover); border-radius:12px; z-index:50; max-height:260px; overflow-y:auto; box-shadow:0 16px 40px rgba(0,0,0,0.5); display:none; }
+  .tz-dropdown.open { display:block; }
+  .tz-option { padding:12px 16px; cursor:pointer; font-size:15px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--border); transition:background 0.12s; gap:8px; }
+  .tz-option:last-child { border-bottom:none; }
+  .tz-option:hover { background:rgba(255,255,255,0.05); }
+  .tz-option.selected { opacity:0.35; cursor:default; pointer-events:none; }
+  .tz-option-city { font-weight:600; }
+  .tz-option-code { font-family:var(--mono); font-size:11px; color:var(--muted); flex-shrink:0; }
+  .tz-no-results { padding:16px; text-align:center; color:var(--muted); font-size:14px; }
+  .limit-notice { margin-bottom:18px; padding:12px 16px; border-radius:10px; background:rgba(240,96,96,0.07); border:1px solid rgba(240,96,96,0.22); font-size:13px; color:var(--danger); display:none; align-items:center; gap:10px; }
+  .limit-notice.show { display:flex; }
+  .upgrade-link { color:var(--accent); text-decoration:underline; cursor:pointer; margin-left:auto; white-space:nowrap; font-weight:700; font-size:12px; }
 
-    .logo-dot {
-      width: 8px;
-      height: 8px;
-      background-color: var(--accent-color);
-      border-radius: 50%;
-    }
+  /* ── Clock cards ── */
+  .section-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+  .section-label { font-family:var(--mono); font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); }
+  .drag-hint { font-family:var(--mono); font-size:10px; color:var(--muted); opacity:0.6; }
+  .clocks { display:flex; flex-direction:column; gap:12px; }
+  .clock-card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:18px 20px; display:flex; align-items:center; gap:14px; position:relative; overflow:hidden; transition:border-color 0.2s; user-select:none; animation:slideIn 0.35s cubic-bezier(0.34,1.56,0.64,1); }
+  @keyframes slideIn { from{opacity:0;transform:translateY(14px) scale(0.98)} to{opacity:1;transform:none} }
+  .clock-card:hover { border-color:var(--border-hover); }
+  .clock-card.dragging { opacity:0.55; transform:scale(0.98); box-shadow:0 24px 48px rgba(0,0,0,0.5); border-color:var(--accent); z-index:10; }
+  .clock-card.drag-over { border-color:var(--accent2); background:rgba(96,119,240,0.08); }
+  .clock-card::before { content:''; position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--accent2); border-radius:16px 0 0 16px; }
+  .clock-card.home::before { background:var(--accent); }
+  .day-band { position:absolute; right:48px; top:11px; font-family:var(--mono); font-size:9px; letter-spacing:1px; color:var(--accent2); text-transform:uppercase; opacity:0.8; }
+  .clock-card.home .day-band { color:var(--accent); }
+  .drag-handle { display:flex; flex-direction:column; gap:3.5px; flex-shrink:0; cursor:grab; padding:4px; opacity:0.25; transition:opacity 0.2s; }
+  .drag-handle:active { cursor:grabbing; }
+  .clock-card:hover .drag-handle { opacity:0.55; }
+  .drag-handle span { display:block; width:14px; height:1.5px; background:var(--text); border-radius:2px; }
+  .clock-analog { position:relative; width:48px; height:48px; flex-shrink:0; }
+  .clock-analog svg { width:48px; height:48px; }
+  .clock-info { flex:1; min-width:0; }
+  .clock-city { font-size:15px; font-weight:700; letter-spacing:-0.2px; margin-bottom:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:flex; align-items:center; gap:7px; }
+  .home-tag { font-size:9px; font-family:var(--mono); color:var(--accent); background:rgba(200,240,96,0.12); border:1px solid rgba(200,240,96,0.25); padding:2px 6px; border-radius:8px; letter-spacing:0.3px; flex-shrink:0; }
+  .clock-tz { font-family:var(--mono); font-size:11px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .clock-time-wrap { text-align:right; flex-shrink:0; }
+  .clock-time { font-family:var(--mono); font-size:28px; font-weight:300; letter-spacing:-1px; line-height:1; }
+  .clock-time .secs { font-size:16px; color:var(--muted); }
+  .clock-time .ampm { font-size:12px; color:var(--muted); margin-left:2px; }
+  .clock-date { font-family:var(--mono); font-size:11px; color:var(--muted); margin-top:4px; }
+  .card-actions { display:flex; flex-direction:column; gap:4px; flex-shrink:0; align-items:center; }
+  .remove-btn { background:none; border:none; cursor:pointer; color:var(--muted); font-size:20px; padding:4px 6px; border-radius:6px; line-height:1; transition:color 0.18s,background 0.18s; }
+  .remove-btn:hover { color:var(--danger); background:rgba(240,96,96,0.1); }
+  .set-home-btn { background:none; border:none; cursor:pointer; color:var(--muted); font-size:11px; font-family:var(--mono); padding:3px 6px; border-radius:5px; white-space:nowrap; transition:color 0.18s,background 0.18s; line-height:1.4; }
+  .set-home-btn:hover { color:var(--accent); background:rgba(200,240,96,0.1); }
+  .change-home-btn { background:none; border:1px solid rgba(200,240,96,0.25); cursor:pointer; color:var(--accent); font-size:10px; font-family:var(--mono); padding:3px 8px; border-radius:5px; transition:background 0.18s; line-height:1.4; white-space:nowrap; }
+  .change-home-btn:hover { background:rgba(200,240,96,0.12); }
+  .empty-state { text-align:center; padding:56px 20px; color:var(--muted); font-size:14px; }
+  .empty-icon { font-size:40px; margin-bottom:10px; }
 
-    main {
-      flex: 1;
-      max-width: 1200px;
-      width: 100%;
-      margin: 0 auto;
-      padding: 1.5rem;
-    }
+  /* ── ALARMS ── */
+  .alarm-add-row { display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap; }
+  .alarm-select { background:var(--surface); border:1px solid var(--border); border-radius:10px; color:var(--text); font-family:var(--font); font-size:15px; padding:10px 14px; outline:none; cursor:pointer; flex:1; min-width:120px; }
+  .alarm-time-input { background:var(--surface); border:1px solid var(--border); border-radius:10px; color:var(--text); font-family:var(--mono); font-size:16px; padding:10px 14px; outline:none; flex:0 0 130px; }
+  .alarm-time-input:focus, .alarm-select:focus { border-color:rgba(255,255,255,0.2); }
+  .alarm-add-btn { background:var(--accent); color:#0a0a0f; border:none; border-radius:10px; font-family:var(--font); font-weight:700; font-size:14px; padding:10px 20px; cursor:pointer; white-space:nowrap; transition:opacity 0.18s; }
+  .alarm-add-btn:hover { opacity:0.85; }
+  .alarms-list { display:flex; flex-direction:column; gap:10px; }
+  .alarm-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:16px 18px; display:flex; align-items:center; gap:14px; transition:border-color 0.2s; }
+  .alarm-card.firing { border-color:var(--accent); background:rgba(200,240,96,0.06); animation:alarmPulse 0.6s ease-in-out infinite; }
+  @keyframes alarmPulse { 0%,100%{box-shadow:0 0 0 0 rgba(200,240,96,0.4)} 50%{box-shadow:0 0 0 8px rgba(200,240,96,0)} }
+  .alarm-toggle { width:42px; height:24px; border-radius:12px; background:var(--surface2); border:1px solid var(--border); cursor:pointer; position:relative; transition:background 0.2s,border-color 0.2s; flex-shrink:0; }
+  .alarm-toggle.on { background:var(--accent); border-color:var(--accent); }
+  .alarm-toggle::after { content:''; position:absolute; top:4px; left:4px; width:14px; height:14px; border-radius:50%; background:#0a0a0f; transition:transform 0.2s; }
+  .alarm-toggle.on::after { transform:translateX(18px); }
+  .alarm-info { flex:1; min-width:0; }
+  .alarm-time-display { font-family:var(--mono); font-size:22px; font-weight:400; letter-spacing:-0.5px; }
+  .alarm-meta { font-family:var(--mono); font-size:11px; color:var(--muted); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .alarm-label-input { background:none; border:none; color:var(--text); font-family:var(--font); font-size:13px; outline:none; width:100%; padding:2px 0; border-bottom:1px dashed transparent; transition:border-color 0.2s; margin-top:3px; }
+  .alarm-label-input:focus { border-color:var(--border-hover); }
+  .alarm-label-input::placeholder { color:var(--muted); }
+  .alarm-dismiss-btn { background:var(--accent); color:#0a0a0f; border:none; border-radius:8px; padding:6px 12px; font-family:var(--font); font-weight:700; font-size:12px; cursor:pointer; display:none; }
+  .alarm-card.firing .alarm-dismiss-btn { display:block; }
+  .alarm-del { background:none; border:none; cursor:pointer; color:var(--muted); font-size:20px; padding:6px; border-radius:6px; transition:color 0.18s; line-height:1; flex-shrink:0; }
+  .alarm-del:hover { color:var(--danger); }
+  .alarm-empty { text-align:center; padding:40px 20px; color:var(--muted); font-size:14px; }
 
-    .tab-content { display: none; }
-    .tab-content.active { display: block; }
+  /* ── CONVERTER ── */
+  .converter-box { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:24px 20px; margin-bottom:20px; }
+  .converter-box h3 { font-size:16px; font-weight:700; margin-bottom:20px; display:flex; align-items:center; gap:8px; }
+  .converter-box h3 .ch-icon { font-size:18px; }
+  .conv-row { display:flex; align-items:center; gap:12px; margin-bottom:14px; flex-wrap:wrap; }
+  .conv-label { font-family:var(--mono); font-size:11px; color:var(--muted); letter-spacing:0.5px; min-width:40px; }
+  .conv-input { background:var(--surface2); border:1px solid var(--border); border-radius:10px; color:var(--text); font-family:var(--mono); font-size:15px; padding:10px 14px; outline:none; flex:1; min-width:120px; transition:border-color 0.2s; }
+  .conv-input:focus { border-color:rgba(255,255,255,0.2); }
+  .conv-select { background:var(--surface2); border:1px solid var(--border); border-radius:10px; color:var(--text); font-family:var(--font); font-size:14px; padding:10px 14px; outline:none; cursor:pointer; flex:1; min-width:140px; }
+  .conv-arrow { color:var(--accent); font-size:18px; font-weight:700; flex-shrink:0; }
+  .conv-result-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:10px; margin-top:16px; }
+  .conv-result-card { background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:14px 16px; }
+  .conv-result-city { font-size:13px; font-weight:600; margin-bottom:4px; }
+  .conv-result-time { font-family:var(--mono); font-size:18px; color:var(--accent); }
+  .conv-result-date { font-family:var(--mono); font-size:10px; color:var(--muted); margin-top:2px; }
 
-    /* World Clock Layout */
-    .hero-clock {
-      text-align: center;
-      padding: 2.5rem 1rem;
-      margin-bottom: 2rem;
-    }
+  /* ── Modals shared ── */
+  .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.72); z-index:200; display:none; align-items:center; justify-content:center; padding:20px; backdrop-filter:blur(6px); }
+  .modal-overlay.show { display:flex; }
+  .modal { background:var(--surface2); border:1px solid rgba(200,240,96,0.18); border-radius:22px; padding:36px 28px; max-width:420px; width:100%; animation:popIn 0.3s cubic-bezier(0.34,1.56,0.64,1); }
+  @keyframes popIn { from{opacity:0;transform:scale(0.86)} to{opacity:1;transform:none} }
+  .modal-icon { font-size:32px; margin-bottom:16px; }
+  .modal h2 { font-size:22px; font-weight:800; margin-bottom:8px; }
+  .modal h2 span { color:var(--accent); }
+  .modal p { font-size:14px; color:var(--muted); line-height:1.65; margin-bottom:24px; }
+  .modal-features { list-style:none; margin-bottom:28px; display:flex; flex-direction:column; gap:12px; }
+  .modal-features li { display:flex; align-items:center; gap:10px; font-size:14px; }
+  .feat-check { width:20px; height:20px; border-radius:50%; background:rgba(200,240,96,0.15); border:1px solid rgba(200,240,96,0.3); display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:11px; color:var(--accent); font-weight:700; }
+  .modal-price .amount { font-family:var(--mono); font-size:36px; font-weight:500; color:var(--accent); }
+  .modal-price .period { font-size:14px; color:var(--muted); margin-left:4px; }
+  .modal-price { margin-bottom:20px; }
+  .modal-cta { width:100%; padding:15px; background:var(--accent); color:#0a0a0f; border:none; border-radius:12px; font-family:var(--font); font-weight:700; font-size:16px; cursor:pointer; transition:opacity 0.18s; }
+  .modal-cta:hover { opacity:0.85; }
+  .modal-close { display:block; text-align:center; margin-top:14px; font-size:13px; color:var(--muted); cursor:pointer; }
+  .modal-close:hover { color:var(--text); }
 
-    .hero-time {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 4.5rem;
-      font-weight: 300;
-    }
+  /* Home picker */
+  .home-modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.72); z-index:300; display:none; align-items:center; justify-content:center; padding:20px; backdrop-filter:blur(6px); }
+  .home-modal-overlay.show { display:flex; }
+  .home-modal { background:var(--surface2); border:1px solid rgba(200,240,96,0.18); border-radius:20px; padding:28px 24px; max-width:400px; width:100%; animation:popIn 0.28s cubic-bezier(0.34,1.56,0.64,1); }
+  .home-modal h3 { font-size:18px; font-weight:800; margin-bottom:6px; }
+  .home-modal p { font-size:13px; color:var(--muted); margin-bottom:18px; line-height:1.5; }
+  .home-search-wrap { position:relative; margin-bottom:10px; }
+  .home-search { width:100%; background:var(--surface); border:1px solid var(--border); border-radius:10px; color:var(--text); font-family:var(--font); font-size:16px; padding:10px 14px 10px 36px; outline:none; transition:border-color 0.2s; }
+  .home-search::placeholder { color:var(--muted); }
+  .home-search:focus { border-color:rgba(255,255,255,0.2); }
+  .home-search-icon { position:absolute; left:11px; top:50%; transform:translateY(-50%); width:15px; height:15px; color:var(--muted); pointer-events:none; }
+  .home-zone-list { max-height:50vh; overflow-y:auto; border-radius:10px; border:1px solid var(--border); }
+  .home-zone-item { padding:13px 14px; cursor:pointer; font-size:15px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--border); transition:background 0.12s; gap:8px; }
+  .home-zone-item:last-child { border-bottom:none; }
+  .home-zone-item:hover, .home-zone-item:active { background:rgba(200,240,96,0.07); }
+  .home-zone-item.current { color:var(--accent); font-weight:600; }
+  .home-zone-item .hz-code { font-family:var(--mono); font-size:11px; color:var(--muted); flex-shrink:0; }
+  .home-modal-cancel { display:block; text-align:center; margin-top:14px; font-size:14px; color:var(--muted); cursor:pointer; padding:8px; }
+  .home-modal-cancel:hover { color:var(--text); }
 
-    .hero-date {
-      color: var(--text-secondary);
-      text-transform: uppercase;
-      font-size: 0.875rem;
-      letter-spacing: 0.05em;
-    }
+  /* Fullscreen alarm overlay */
+  .alarm-overlay {
+    position: fixed; inset: 0; z-index: 9999;
+    background: rgba(10,10,15,0.97);
+    display: none; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; padding: 40px 24px;
+    animation: alarmFadeIn 0.3s ease;
+  }
+  .alarm-overlay.show { display: flex; }
+  @keyframes alarmFadeIn { from{opacity:0} to{opacity:1} }
+  .alarm-overlay-ring {
+    font-size: 72px; margin-bottom: 24px;
+    animation: alarmRing 0.5s ease-in-out infinite alternate;
+  }
+  @keyframes alarmRing { from{transform:rotate(-15deg) scale(1)} to{transform:rotate(15deg) scale(1.1)} }
+  .alarm-overlay-title { font-size: 13px; font-family:var(--mono); letter-spacing:2px; text-transform:uppercase; color:var(--muted); margin-bottom:12px; }
+  .alarm-overlay-label { font-size: 34px; font-weight: 800; color: var(--text); margin-bottom:8px; letter-spacing:-1px; }
+  .alarm-overlay-time  { font-size: 20px; font-family:var(--mono); color: var(--accent); margin-bottom: 40px; }
+  .alarm-overlay-dismiss {
+    background: var(--accent); color: #0a0a0f; border: none; border-radius: 16px;
+    font-family: var(--font); font-weight: 800; font-size: 18px;
+    padding: 18px 56px; cursor: pointer;
+    box-shadow: 0 0 40px rgba(200,240,96,0.4);
+    animation: dismissPulse 1.2s ease-in-out infinite;
+  }
+  @keyframes dismissPulse { 0%,100%{box-shadow:0 0 20px rgba(200,240,96,0.3)} 50%{box-shadow:0 0 60px rgba(200,240,96,0.7)} }
+  .alarm-overlay-dismiss:hover { opacity: 0.88; }
+  .alarm-overlay-snooze {
+    margin-top: 16px; background: none; border: 1px solid var(--border-hover);
+    color: var(--muted); border-radius: 10px; font-family:var(--font);
+    font-size: 14px; padding: 12px 32px; cursor: pointer; transition: color 0.2s, border-color 0.2s;
+  }
+  .alarm-overlay-snooze:hover { color: var(--text); border-color: var(--text); }
 
-    .clock-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-      gap: 1.25rem;
-    }
+  ::-webkit-scrollbar { width:5px; }
+  ::-webkit-scrollbar-track { background:transparent; }
+  ::-webkit-scrollbar-thumb { background:var(--border-hover); border-radius:4px; }
 
-    .clock-card {
-      background-color: var(--surface-color);
-      border: 1px solid var(--border-color);
-      border-radius: 16px;
-      padding: 1.5rem;
-    }
+  /* ══════════════════════════════════════
+     MOBILE — ≤ 540px
+  ══════════════════════════════════════ */
+  @media (max-width: 540px) {
+    .app { padding: 20px 14px 60px; }
 
-    .card-header {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 1rem;
-    }
+    /* Header */
+    .header { margin-bottom: 18px; gap: 8px; }
+    .logo-text { font-size: 17px; }
+    .plan-badge { display: none; }
 
-    .card-time {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 2.25rem;
-    }
+    /* Tabs */
+    .tabs { margin-bottom: 18px; padding: 3px; gap: 3px; }
+    .tab-btn { padding: 9px 4px; font-size: 11px; gap: 3px; }
+    .tab-btn .tab-icon { font-size: 16px; }
+    .tab-text { display: none; }
 
-    .remove-btn {
-      background: none;
-      border: none;
-      color: var(--text-secondary);
-      cursor: pointer;
-      font-size: 1rem;
-    }
+    /* World bar */
+    .world-bar { padding: 10px 12px; gap: 8px; margin-bottom: 16px; }
+    .world-bar-label { display: none; }
+    .world-city-name { font-size: 8px; letter-spacing: 0; }
+    .world-city-time { font-size: 11px; }
 
-    /* Input & Utility Layout Blocks */
-    .feature-card {
-      background-color: var(--surface-color);
-      border: 1px solid var(--border-color);
-      border-radius: 16px;
-      padding: 2rem;
-      max-width: 600px;
-      margin: 0 auto 1.5rem auto;
-    }
+    /* Add row */
+    .add-row { gap: 8px; }
+    .tz-search { font-size: 16px; padding: 11px 14px 11px 36px; }
+    .add-btn { padding: 11px 14px; font-size: 13px; }
 
-    .feature-title {
-      font-size: 1.5rem;
-      font-weight: 700;
-      margin-bottom: 1.5rem;
-    }
+    /* Clock cards */
+    .clock-card { padding: 14px 14px; gap: 10px; border-radius: 14px; }
+    .drag-handle { display: none; }
+    .clock-analog { width: 38px; height: 38px; }
+    .clock-analog svg { width: 38px; height: 38px; }
+    .clock-city { font-size: 14px; margin-bottom: 2px; }
+    .clock-tz { font-size: 10px; }
+    .clock-time { font-size: 22px; }
+    .clock-time .secs { display: none; }
+    .clock-time .ampm { font-size: 10px; }
+    .clock-date { font-size: 10px; margin-top: 2px; }
+    .day-band { right: 14px; top: 12px; font-size: 8px; }
 
-    .form-group {
-      margin-bottom: 1.25rem;
-    }
+    /* Alarms */
+    .alarm-add-row { gap: 8px; margin-bottom: 14px; }
+    .alarm-select, .alarm-time-input, .alarm-add-btn { font-size: 14px; padding: 10px 12px; }
+    .alarm-time-input { flex: 1; min-width: 90px; }
+    .alarm-add-btn { flex: 1 1 100%; text-align: center; justify-content: center; }
+    .alarm-card { padding: 12px 14px; gap: 10px; }
+    .alarm-time-display { font-size: 19px; }
 
-    .form-group label {
-      display: block;
-      font-size: 0.875rem;
-      color: var(--text-secondary);
-      margin-bottom: 0.5rem;
-    }
+    /* Converter */
+    .converter-box { padding: 16px 14px; }
+    .conv-row { gap: 8px; margin-bottom: 10px; }
+    .conv-input, .conv-select { font-size: 14px; padding: 9px 12px; }
+    .conv-result-grid { grid-template-columns: 1fr; gap: 8px; }
 
-    .app-input, .app-select {
-      width: 100%;
-      background-color: var(--bg-color);
-      border: 1px solid var(--border-color);
-      color: white;
-      padding: 0.85rem 1rem;
-      border-radius: 10px;
-      font-size: 1rem;
-      outline: none;
-    }
+    /* Modals */
+    .modal { padding: 28px 20px; border-radius: 18px; }
+    .modal h2 { font-size: 20px; }
+    .home-modal { padding: 24px 18px; }
+    .home-zone-item { padding: 14px 12px; font-size: 14px; }
 
-    .app-input:focus, .app-select:focus {
-      border-color: var(--accent-color);
-    }
+    /* Alarm overlay */
+    .alarm-overlay-ring { font-size: 56px; }
+    .alarm-overlay-label { font-size: 28px; }
+    .alarm-overlay-dismiss { font-size: 16px; padding: 16px 40px; }
+  }
 
-    .app-btn {
-      background-color: var(--accent-color);
-      color: white;
-      border: none;
-      padding: 0.85rem 1.5rem;
-      border-radius: 10px;
-      font-size: 1rem;
-      font-weight: 600;
-      cursor: pointer;
-      width: 100%;
-    }
-
-    /* List displays */
-    .item-list {
-      display: flex;
-      flex-direction: column;
-      gap: 0.75rem;
-      margin-top: 1.5rem;
-    }
-
-    .list-item {
-      background-color: var(--bg-color);
-      border: 1px solid var(--border-color);
-      padding: 1rem;
-      border-radius: 10px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    /* Navigation Menu Row */
-    .nav-bar {
-      position: fixed;
-      bottom: 0; left: 0; right: 0;
-      background-color: rgba(18, 18, 30, 0.9);
-      backdrop-filter: blur(20px);
-      border-top: 1px solid var(--border-color);
-      display: flex;
-      justify-content: space-around;
-      padding: 0.75rem 0;
-      z-index: 1000;
-    }
-
-    .nav-item {
-      background: none;
-      border: none;
-      color: var(--text-secondary);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      font-size: 0.7rem;
-      cursor: pointer;
-      width: 20%;
-      gap: 2px;
-    }
-
-    .nav-item.active { color: var(--accent-color); }
-    .nav-icon { font-size: 1.2rem; }
-
-    /* Quick Floating Action Button */
-    .fab {
-      position: fixed;
-      bottom: 95px; right: 20px;
-      background-color: var(--accent-color);
-      color: white;
-      border: none;
-      width: 56px; height: 56px;
-      border-radius: 50%;
-      font-size: 1.5rem;
-      cursor: pointer;
-      z-index: 99;
-      box-shadow: 0 4px 12px var(--accent-glow);
-    }
-
-    /* Modal Picker Sheet */
-    .modal-overlay {
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background-color: rgba(0,0,0,0.6);
-      display: none;
-      align-items: flex-end;
-      z-index: 2000;
-    }
-    .modal-overlay.open { display: flex; }
-    
-    .modal-sheet {
-      background-color: var(--surface-color);
-      width: 100%;
-      border-top-left-radius: 24px;
-      border-top-right-radius: 24px;
-      padding: 2rem 1.5rem;
-      max-height: 70vh;
-      overflow-y: auto;
-    }
-
-    .city-option {
-      padding: 1rem;
-      background-color: var(--bg-color);
-      border: 1px solid var(--border-color);
-      border-radius: 10px;
-      margin-bottom: 0.5rem;
-      cursor: pointer;
-      display: flex;
-      justify-content: space-between;
-    }
-
-    /* Educational Smart Banner for iOS Safari installation */
-    .ios-install-banner {
-      display: none;
-      position: fixed;
-      bottom: 90px; left: 15px; right: 15px;
-      background-color: #1c1c2e;
-      border: 1px solid #3a3a5c;
-      border-radius: 14px;
-      padding: 1rem;
-      z-index: 9999;
-    }
-    .ios-banner-content { display: flex; align-items: center; gap: 12px; font-size: 0.9rem; }
-    .ios-banner-icon { width: 40px; height: 40px; border-radius: 8px; flex-shrink: 0; }
-    .ios-banner-close { position: absolute; top: 6px; right: 10px; background: none; border: none; color: #8d99ae; }
-  </style>
+  /* Medium phones */
+  @media (min-width: 541px) and (max-width: 640px) {
+    .app { padding: 24px 18px 70px; }
+    .clock-card { padding: 16px 18px; gap: 12px; }
+    .clock-time { font-size: 26px; }
+    .tab-text { display: none; }
+  }
+</style>
 </head>
 <body>
-
-  <header>
-    <div class="logo"><div class="logo-dot"></div>ZoneClock</div>
-    <nav class="nav-bar">
-      <button class="nav-item active" onclick="switchTab('clocks')"><span class="nav-icon">⏰</span><span>Clock</span></button>
-      <button class="nav-item" onclick="switchTab('alarms')"><span class="nav-icon">🔔</span><span>Alarms</span></button>
-      <button class="nav-item" onclick="switchTab('converter')"><span class="nav-icon">🔄</span><span>Converter</span></button>
-      <button class="nav-item" onclick="switchTab('lookup')"><span class="nav-icon">🔍</span><span>Is It There</span></button>
-      <button class="nav-item" onclick="switchTab('desk')"><span class="nav-icon">📺</span><span>Desk</span></button>
-    </nav>
-  </header>
-
-  <main>
-    <!-- TAB 1: WORLD CLOCKS -->
-    <section id="clocks-tab" class="tab-content active">
-      <div class="hero-clock">
-        <div class="hero-time" id="local-time">00:00:00</div>
-        <div class="hero-date" id="local-date">Loading...</div>
+<div class="grid-bg"></div>
+<div class="app">
+  <div class="header">
+    <div class="logo"><div class="logo-dot"></div><div class="logo-text">Zone<span>Clock</span></div></div>
+    <div class="header-controls">
+      <div class="toggle-wrap">
+        <button class="toggle-btn active" id="btn12" onclick="setFormat(12)">12h</button>
+        <button class="toggle-btn" id="btn24" onclick="setFormat(24)">24h</button>
       </div>
-      <div class="clock-grid" id="tracked-clocks"></div>
-    </section>
-
-    <!-- TAB 2: ALARMS -->
-    <section id="alarms-tab" class="tab-content">
-      <div class="feature-card">
-        <div class="feature-title">Set System Alarm</div>
-        <div class="form-group">
-          <label>Alarm Time</label>
-          <input type="time" class="app-input" id="alarm-time">
-        </div>
-        <button class="app-btn" onclick="addAlarm()">Add Alarm</button>
-        <div class="item-list" id="alarm-list"></div>
-      </div>
-    </section>
-
-    <!-- TAB 3: ZONE CONVERTER -->
-    <section id="converter-tab" class="tab-content">
-      <div class="feature-card">
-        <div class="feature-title">Time Zone Converter</div>
-        <div class="form-group">
-          <label>Base Time</label>
-          <input type="time" class="app-input" id="conv-source-time" oninput="runConversion()">
-        </div>
-        <div class="form-group">
-          <label>Target Zone</label>
-          <select class="app-select" id="conv-target-zone" onchange="runConversion()"></select>
-        </div>
-        <div style="margin-top: 1.5rem; padding: 1rem; background: var(--bg-color); border-radius:10px;">
-          <span style="color:var(--text-secondary); font-size:0.85rem;">Converted Equivalent:</span>
-          <div id="conv-result" style="font-family:'JetBrains Mono', monospace; font-size:1.75rem; margin-top:0.25rem;">--:--</div>
-        </div>
-      </div>
-    </section>
-
-    <!-- TAB 4: WHAT TIME IS IT THERE LOOKUP -->
-    <section id="lookup-tab" class="tab-content">
-      <div class="feature-card">
-        <div class="feature-title">What time is it there?</div>
-        <div class="form-group">
-          <label>Select Target City Timeline</label>
-          <select class="app-select" id="lookup-zone" onchange="runQuickLookup()"></select>
-        </div>
-        <div style="margin-top: 1.5rem; text-align: center; padding: 2rem 1rem; background: var(--bg-color); border-radius:12px;">
-          <div id="lookup-time" style="font-family:'JetBrains Mono', monospace; font-size:3rem; font-weight:400;">00:00:00</div>
-          <div id="lookup-date" style="color:var(--text-secondary); font-size:0.9rem; margin-top:0.5rem;">Choose a location</div>
-        </div>
-      </div>
-    </section>
-
-    <!-- TAB 5: DESK MODE -->
-    <section id="desk-tab" class="tab-content">
-      <div style="text-align:center; padding-top:6rem;">
-        <div class="hero-time" id="desk-time" style="font-size:6.5rem;">00:00</div>
-        <div class="hero-date" id="desk-date">...</div>
-      </div>
-    </section>
-  </main>
-
-  <button class="fab" id="open-picker-btn">＋</button>
-
-  <!-- iOS Installer System Drawer Notification UI -->
-  <div class="ios-install-banner" id="ios-banner">
-    <button class="ios-banner-close" onclick="closeIosBanner()">✕</button>
-    <div class="ios-banner-content">
-      <img src="./icon-180.png" class="ios-banner-icon" alt="App Icon">
-      <div>
-        <strong>Install ZoneClock</strong><br>
-        Tap the Safari **Share** button below, scroll down the sheet, and tap **Add to Home Screen** ＋.
-      </div>
+      <div class="plan-badge" id="planBadge">FREE PLAN</div>
     </div>
   </div>
 
-  <div class="modal-overlay" id="picker-modal">
-    <div class="modal-sheet">
-      <input type="text" class="search-input" id="city-search" placeholder="Search world cities...">
-      <div id="search-results"></div>
-    </div>
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('clocks', this)"><span class="tab-icon">🕐</span><span class="tab-text">Clocks</span></button>
+    <button class="tab-btn" onclick="switchTab('alarms', this)"><span class="tab-icon">⏰</span><span class="tab-text">Alarms</span></button>
+    <button class="tab-btn" onclick="switchTab('converter', this)"><span class="tab-icon">🔄</span><span class="tab-text">Converter</span></button>
+    <button class="tab-btn" onclick="switchTab('lookup', this)"><span class="tab-icon">🔍</span><span class="tab-text">Meeting Lookup</span></button>
   </div>
 
-  <script>
-    const AVAILABLE_CITIES = [
-      { name: 'London', zone: 'Europe/London' },
-      { name: 'New York', zone: 'America/New_York' },
-      { name: 'Tokyo', zone: 'Asia/Tokyo' },
-      { name: 'Paris', zone: 'Europe/Paris' },
-      { name: 'Sydney', zone: 'Australia/Sydney' },
-      { name: 'Dubai', zone: 'Asia/Dubai' },
-      { name: 'Los Angeles', zone: 'America/Los_Angeles' },
-      { name: 'Singapore', zone: 'Asia/Singapore' }
-    ];
+  <div class="world-bar">
+    <div class="world-bar-label">Live Grid</div>
+    <div class="world-cities" id="worldBarCities"></div>
+  </div>
 
-    let userTrackedZones = JSON.parse(localStorage.getItem('tracked_zones')) || ['America/New_York', 'Europe/London', 'Asia/Tokyo'];
-    let userAlarms = JSON.parse(localStorage.getItem('user_alarms')) || [];
+  <div class="limit-notice" id="limitNotice">
+    <span>⚠️ You reached the free limit of 4 clocks.</span>
+    <span class="upgrade-link" onclick="openPremiumModal()">Upgrade to Premium</span>
+  </div>
 
-    function switchTab(tabId) {
-      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-      document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-      document.getElementById(`${tabId}-tab`).classList.add('active');
-      event.currentTarget.classList.add('active');
+  /* ═══════════════════════════════════════
+     TAB PANELS
+  ═══════════════════════════════════════ */
+  
+  <div id="panel-clocks" class="tab-panel active">
+    <div class="add-row">
+      <div class="search-wrap">
+        <span class="search-icon">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+        </span>
+        <input type="text" class="tz-search" id="tzSearch" placeholder="Search city or country..." oninput="onSearch()" onfocus="onSearch()" autocomplete="off">
+        <div class="tz-dropdown" id="tzDropdown"></div>
+      </div>
+      <button class="add-btn" id="addBtn" onclick="addSelectedZone()">Add Clock</button>
+    </div>
+
+    <div class="section-header" style="margin-top:20px;">
+      <div class="section-label">Tracked Time Zones</div>
+      <div class="drag-hint">Drag handle ☰ to reorder</div>
+    </div>
+    <div class="clocks" id="clocksContainer"></div>
+  </div>
+
+  <div id="panel-alarms" class="tab-panel">
+    <div class="alarm-add-row">
+      <select class="alarm-select" id="alarmZoneSelect"></select>
+      <input type="time" class="alarm-time-input" id="alarmTimeInput">
+      <button class="alarm-add-btn" onclick="addAlarm()">Set Alarm</button>
+    </div>
+    <div id="alarmHomeTz" style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-bottom:14px;"></div>
+    <div class="alarms-list" id="alarmsList"></div>
+  </div>
+
+  <div id="panel-converter" class="tab-panel">
+    <div class="converter-box">
+      <h3><span class="ch-icon">📅</span> Base Reference Time</h3>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:18px 20px;margin-bottom:12px;">
+        <div style="font-family:var(--mono);font-size:9px;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);margin-bottom:12px;">From</div>
+        <div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap;">
+          <input class="conv-input" type="time" id="convTime" oninput="runConverter()" style="flex:0 0 130px;"/>
+          <input class="conv-input" type="date" id="convDate" oninput="runConverter()" style="flex:1;min-width:140px;"/>
+        </div>
+        <select class="conv-select" id="convFrom" onchange="runConverter()" style="width:100%;"></select>
+      </div>
+
+      <div style="display:flex;justify-content:center;margin-bottom:12px;">
+        <button id="swapBtn" onclick="swapConverter()" title="Swap timezones" style="background:var(--surface2);border:1px solid var(--border);border-radius:50%;width:36px;height:36px;cursor:pointer;color:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:700;">⇄</button>
+      </div>
+
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:18px 20px;">
+        <div style="font-family:var(--mono);font-size:9px;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);margin-bottom:12px;">To Target Zone</div>
+        <select class="conv-select" id="convTo" onchange="runConverter()" style="width:100%;margin-bottom:14px;"></select>
+        <div style="background:var(--surface);padding:14px;border-radius:8px;border:1px solid var(--border);text-align:center;">
+          <div id="convSingleResult" style="font-family:var(--mono);font-size:24px;color:var(--accent);font-weight:400;">--:--</div>
+          <div id="convSingleDate" style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:4px;">Select zones</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-header">
+      <div class="section-label">Simultaneous Conversion Across Other Clocks</div>
+    </div>
+    <div class="conv-result-grid" id="convResults"></div>
+  </div>
+
+  <div id="panel-lookup" class="tab-panel">
+    <div class="converter-box" style="margin-bottom:16px;">
+      <h3><span class="ch-icon">⚡</span> Quick Target Sync</h3>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:14px;line-height:1.5;">Pick an international location to look up standard operating windows translated directly to your local tracking base.</p>
+      <select class="conv-select" id="lookupTargetSelect" onchange="runMeetingLookup()" style="width:100%;"></select>
+    </div>
+    <div id="lkResults" style="display:none;">
+      <div id="lkBestDesc" style="font-size:13px;color:var(--muted);margin-bottom:12px;"></div>
+      <div id="lkBestTimes" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;"></div>
+    </div>
+    <div id="lkEmpty" class="empty-state" style="padding:30px 20px;">
+      <div class="empty-icon">🔍</div>
+      Select a target town above to test standard operational shifts.
+    </div>
+  </div>
+</div>
+
+/* ═══════════════════════════════════════
+   MODALS & OVERLAYS
+═══════════════════════════════════════ */
+
+<div class="modal-overlay" id="premiumModal">
+  <div class="modal">
+    <div class="modal-icon">🚀</div>
+    <h2>ZoneClock <span>Premium</span></h2>
+    <p>Unlock ultimate precision monitoring with seamless tracking across thousands of locations without limits.</p>
+    <ul class="modal-features">
+      <li><div class="feat-check">✓</div> Track infinite simultaneous cities</li>
+      <li><div class="feat-check">✓</div> Advanced high-integrity notification rules</li>
+      <li><div class="feat-check">✓</div> Absolute standalone persistent offline cache</li>
+    </ul>
+    <div class="modal-price"><span class="amount">$2.99</span><span class="period">/ lifetime</span></div>
+    <button class="modal-cta" onclick="upgradeToPremium()">Unlock Lifetime Access</button>
+    <span class="modal-close" onclick="closePremiumModal()">Maybe Later</span>
+  </div>
+</div>
+
+<div class="home-modal-overlay" id="homeModal">
+  <div class="home-modal">
+    <h3>Configure Tracking Base</h3>
+    <p>Select your home primary reference point:</p>
+    <div class="home-search-wrap">
+      <span class="home-search-icon">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+      </span>
+      <input type="text" class="home-search" id="homeSearchInput" placeholder="Filter base locations..." oninput="onHomeSearch()">
+    </div>
+    <div class="home-zone-list" id="homeZoneListContainer"></div>
+    <span class="home-modal-cancel" onclick="closeHomeModal()">Cancel</span>
+  </div>
+</div>
+
+<div class="alarm-overlay" id="alarmOverlay">
+  <div class="alarm-overlay-ring">⏰</div>
+  <div class="alarm-overlay-title">Firing Notification Alarm</div>
+  <div class="alarm-overlay-label" id="alarmOverlayLabel">Wake Up</div>
+  <div class="alarm-overlay-time" id="alarmOverlayTime">00:00 AM</div>
+  <button class="alarm-overlay-dismiss" onclick="overlayDismiss()">Dismiss Alarm</button>
+  <button class="alarm-overlay-snooze" onclick="overlaySnooze()">Snooze 5 Minutes</button>
+</div>
+
+/* ═══════════════════════════════════════
+   CORE APPLICATION ENGINE SCRIPT
+═══════════════════════════════════════ */
+<script>
+/* ── HIGH DENSITY REGIONAL AND CONTINENTAL TIME ZONE DATABASE (120+ Key Hubs) ── */
+const ZONES = [
+  { label: "Aberdeen", tz: "Europe/London" },
+  { label: "Abidjan", tz: "Africa/Abidjan" },
+  { label: "Abu Dhabi", tz: "Asia/Dubai" },
+  { label: "Accra", tz: "Africa/Accra" },
+  { label: "Adelaide", tz: "Australia/Adelaide" },
+  { label: "Alexandria", tz: "Africa/Cairo" },
+  { label: "Algiers", tz: "Africa/Algiers" },
+  { label: "Amman", tz: "Asia/Amman" },
+  { label: "Amsterdam", tz: "Europe/Amsterdam" },
+  { label: "Anadyr", tz: "Asia/Anadyr" },
+  { label: "Anchorage", tz: "America/Anchorage" },
+  { label: "Ankara", tz: "Europe/Istanbul" },
+  { label: "Antananarivo", tz: "Indian/Antananarivo" },
+  { label: "Asuncion", tz: "America/Asuncion" },
+  { label: "Athens", tz: "Europe/Athens" },
+  { label: "Auckland", tz: "Pacific/Auckland" },
+  { label: "Azores", tz: "Atlantic/Azores" },
+  { label: "Baghdad", tz: "Asia/Baghdad" },
+  { label: "Baku", tz: "Asia/Baku" },
+  { label: "Bangkok", tz: "Asia/Bangkok" },
+  { label: "Beijing", tz: "Asia/Shanghai" },
+  { label: "Beirut", tz: "Asia/Beirut" },
+  { label: "Belgrade", tz: "Europe/Belgrade" },
+  { label: "Berlin", tz: "Europe/Berlin" },
+  { label: "Bogota", tz: "America/Bogota" },
+  { label: "Boston", tz: "America/New_York" },
+  { label: "Brasilia", tz: "America/Sao_Paulo" },
+  { label: "Brisbane", tz: "Australia/Brisbane" },
+  { label: "Brussels", tz: "Europe/Brussels" },
+  { label: "Bucharest", tz: "Europe/Bucharest" },
+  { label: "Budapest", tz: "Europe/Budapest" },
+  { label: "Buenos Aires", tz: "America/Argentina/Buenos_Aires" },
+  { label: "Cairo", tz: "Africa/Cairo" },
+  { label: "Cape Town", tz: "Africa/Johannesburg" },
+  { label: "Caracas", tz: "America/Caracas" },
+  { label: "Casablanca", tz: "Africa/Casablanca" },
+  { label: "Chatham", tz: "Pacific/Chatham" },
+  { label: "Chicago", tz: "America/Chicago" },
+  { label: "Chihuahua", tz: "America/Chihuahua" },
+  { label: "Copenhagen", tz: "Europe/Copenhagen" },
+  { label: "Dakar", tz: "Africa/Dakar" },
+  { label: "Dallas", tz: "America/Chicago" },
+  { label: "Dar es Salaam", tz: "Africa/Dar_es_Salaam" },
+  { label: "Darwin", tz: "Australia/Darwin" },
+  { label: "Denver", tz: "America/Denver" },
+  { label: "Dhaka", tz: "Asia/Dhaka" },
+  { label: "Doha", tz: "Asia/Qatar" },
+  { label: "Dublin", tz: "Europe/Dublin" },
+  { label: "Edmonton", tz: "America/Edmonton" },
+  { label: "Frankfurt", tz: "Europe/Frankfurt" },
+  { label: "Geneva", tz: "Europe/Zurich" },
+  { label: "Gibraltar", tz: "Europe/Gibraltar" },
+  { label: "Guatemala", tz: "America/Guatemala" },
+  { label: "Halifax", tz: "America/Halifax" },
+  { label: "Hanoi", tz: "Asia/Ho_Chi_Minh" },
+  { label: "Harare", tz: "Africa/Harare" },
+  { label: "Havana", tz: "America/Havana" },
+  { label: "Helsinki", tz: "Europe/Helsinki" },
+  { label: "Hong Kong", tz: "Asia/Hong_Kong" },
+  { label: "Honolulu", tz: "Pacific/Honolulu" },
+  { label: "Houston", tz: "America/Chicago" },
+  { label: "Hyderabad", tz: "Asia/Kolkata" },
+  { label: "Indianapolis", tz: "America/Indiana/Indianapolis" },
+  { label: "Islamabad", tz: "Asia/Karachi" },
+  { label: "Istanbul", tz: "Europe/Istanbul" },
+  { label: "Jakarta", tz: "Asia/Jakarta" },
+  { label: "Jerusalem", tz: "Asia/Jerusalem" },
+  { label: "Johannesburg", tz: "Africa/Johannesburg" },
+  { label: "Kabul", tz: "Asia/Kabul" },
+  { label: "Karachi", tz: "Asia/Karachi" },
+  { label: "Kathmandu", tz: "Asia/Kathmandu" },
+  { label: "Khartoum", tz: "Africa/Khartoum" },
+  { label: "Kiev", tz: "Europe/Kiev" },
+  { label: "Kolkata", tz: "Asia/Kolkata" },
+  { label: "Kuala Lumpur", tz: "Asia/Kuala_Lumpur" },
+  { label: "Kuwait", tz: "Asia/Kuwait" },
+  { label: "Lagos", tz: "Africa/Lagos" },
+  { label: "La Paz", tz: "America/La_Paz" },
+  { label: "Lima", tz: "America/Lima" },
+  { label: "Lisbon", tz: "Europe/Lisbon" },
+  { label: "London", tz: "Europe/London" },
+  { label: "Los Angeles", tz: "America/Los_Angeles" },
+  { label: "Luanda", tz: "Africa/Luanda" },
+  { label: "Luxembourg", tz: "Europe/Luxembourg" },
+  { label: "Madrid", tz: "Europe/Madrid" },
+  { label: "Malé", tz: "Indian/Maldives" },
+  { label: "Manila", tz: "Asia/Manila" },
+  { label: "Marrakesh", tz: "Africa/Casablanca" },
+  { label: "Melbourne", tz: "Australia/Melbourne" },
+  { label: "Mexico City", tz: "America/Mexico_City" },
+  { label: "Miami", tz: "America/New_York" },
+  { label: "Monaco", tz: "Europe/Monaco" },
+  { label: "Montreal", tz: "America/Toronto" },
+  { label: "Moscow", tz: "Europe/Moscow" },
+  { label: "Mumbai", tz: "Asia/Kolkata" },
+  { label: "Muscat", tz: "Asia/Muscat" },
+  { label: "Nairobi", tz: "Africa/Nairobi" },
+  { label: "New Delhi", tz: "Asia/Kolkata" },
+  { label: "New Orleans", tz: "America/Chicago" },
+  { label: "New York", tz: "America/New_York" },
+  { label: "Noumea", tz: "Pacific/Noumea" },
+  { label: "Oslo", tz: "Europe/Oslo" },
+  { label: "Ottawa", tz: "America/Ottawa" },
+  { label: "Paris", tz: "Europe/Paris" },
+  { label: "Perth", tz: "Australia/Perth" },
+  { label: "Phoenix", tz: "America/Phoenix" },
+  { label: "Prague", tz: "Europe/Prague" },
+  { label: "Reykjavik", tz: "Atlantic/Reykjavik" },
+  { label: "Rio de Janeiro", tz: "America/Sao_Paulo" },
+  { label: "Riyadh", tz: "Asia/Riyadh" },
+  { label: "Rome", tz: "Europe/Rome" },
+  { label: "San Francisco", tz: "America/Los_Angeles" },
+  { label: "Santiago", tz: "America/Santiago" },
+  { label: "Santo Domingo", tz: "America/Santo_Dominging" },
+  { label: "Sao Paulo", tz: "America/Sao_Paulo" },
+  { label: "Seattle", tz: "America/Los_Angeles" },
+  { label: "Seoul", tz: "Asia/Seoul" },
+  { label: "Shanghai", tz: "Asia/Shanghai" },
+  { label: "Singapore", tz: "Asia/Singapore" },
+  { label: "Sofia", tz: "Europe/Sofia" },
+  { label: "St. John's", tz: "America/St_Johns" },
+  { label: "Stockholm", tz: "Europe/Stockholm" },
+  { label: "Sydney", tz: "Australia/Sydney" },
+  { label: "Taipei", tz: "Asia/Taipei" },
+  { label: "Tashkent", tz: "Asia/Tashkent" },
+  { label: "Tehran", tz: "Asia/Tehran" },
+  { label: "Tokyo", tz: "Asia/Tokyo" },
+  { label: "Toronto", tz: "America/Toronto" },
+  { label: "Tripoli", tz: "Africa/Tripoli" },
+  { label: "Tunis", tz: "Africa/Tunis" },
+  { label: "Vancouver", tz: "America/Vancouver" },
+  { label: "Vienna", tz: "Europe/Vienna" },
+  { label: "Warsaw", tz: "Europe/Warsaw" },
+  { label: "Washington DC", tz: "America/New_York" },
+  { label: "Wellington", tz: "Pacific/Auckland" },
+  { label: "Winnipeg", tz: "America/Winnipeg" },
+  { label: "Zurich", tz: "Europe/Zurich" }
+].sort((a,b) => a.label.localeCompare(b.label));
+
+const FREE_LIMIT = 4;
+let isPremium = localStorage.getItem('zc_premium') === 'true';
+let hourFormat = parseInt(localStorage.getItem('zc_format')) || 12;
+
+let userZones = JSON.parse(localStorage.getItem('zc_user_zones')) || [
+  { label: "Cairo", tz: "Africa/Cairo", home: true },
+  { label: "London", tz: "Europe/London", home: false },
+  { label: "New York", tz: "America/New_York", home: false },
+  { label: "Tokyo", tz: "Asia/Tokyo", home: false }
+];
+
+let alarms = JSON.parse(localStorage.getItem('zc_alarms')) || [];
+let selectedTz = null;
+let dragSrcIndex = null;
+let currentFiringAlarm = null;
+let firingAlarmIds = new Set();
+let lastFiredMinute = {};
+
+/* ═══════════════════════════════════════
+   PERSISTENCE LAYER
+═══════════════════════════════════════ */
+function saveZones() { localStorage.setItem('zc_user_zones', JSON.stringify(userZones)); }
+function saveAlarms() { localStorage.setItem('zc_alarms', JSON.stringify(alarms)); }
+
+/* ═══════════════════════════════════════
+   NAVIGATION / TABS
+═══════════════════════════════════════ */
+function switchTab(tab, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + tab).classList.add('active');
+  btn.classList.add('active');
+
+  if(tab === 'converter') initConverter();
+  if(tab === 'lookup') initMeetingLookup();
+}
+
+function setFormat(fmt) {
+  hourFormat = fmt;
+  localStorage.setItem('zc_format', fmt);
+  document.getElementById('btn12').classList.toggle('active', fmt === 12);
+  document.getElementById('btn24').classList.toggle('active', fmt === 24);
+  renderClocks();
+  if(document.getElementById('panel-converter').classList.contains('active')) runConverter();
+}
+
+/* ═══════════════════════════════════════
+   PREMIUM HANDLING
+═══════════════════════════════════════ */
+function updateUI() {
+  const badge = document.getElementById('planBadge');
+  if(isPremium) {
+    badge.textContent = "PREMIUM PLAN";
+    badge.classList.add('premium');
+    document.getElementById('limitNotice').classList.remove('show');
+  } else {
+    badge.textContent = "FREE PLAN";
+    badge.classList.remove('premium');
+  }
+  const atLimit = !isPremium && userZones.length >= FREE_LIMIT;
+  const btn = document.getElementById('addBtn');
+  btn.disabled = atLimit;
+  btn.title = atLimit ? 'Upgrade to add more zones' : '';
+}
+
+function openPremiumModal() { document.getElementById('premiumModal').classList.add('show'); }
+function closePremiumModal() { document.getElementById('premiumModal').classList.remove('show'); }
+function upgradeToPremium() {
+  isPremium = true;
+  localStorage.setItem('zc_premium', 'true');
+  updateUI();
+  closePremiumModal();
+}
+
+/* ═══════════════════════════════════════
+   TIME OPERATIONS
+═══════════════════════════════════════ */
+function getTimeParts(tz) {
+  const now = new Date();
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: tz, hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+  });
+  const parts = formatter.formatToParts(now);
+  const h = parts.find(p => p.type === 'hour').value;
+  const m = parts.find(p => p.type === 'minute').value;
+  const s = parts.find(p => p.type === 'second').value;
+  const ampm = parseInt(h) >= 12 ? 'PM' : 'AM';
+  let h12 = parseInt(h) % 12;
+  if(h12 === 0) h12 = 12;
+  return { h: parseInt(h), h12, m, s, ampm };
+}
+
+function formatDate(tz) {
+  return new Intl.DateTimeFormat('en-US', { timeZone: tz, weekday: 'short', month: 'short', day: 'numeric' }).format(new Date());
+}
+
+function getOffset(tz) {
+  try {
+    const parts = new Intl.DateTimeFormat('en', { timeZone: tz, timeZoneName: 'shortOffset' }).formatToParts(new Date());
+    const off = parts.find(p => p.type === 'timeZoneName');
+    return off ? off.value : '';
+  } catch(e) { return ''; }
+}
+
+function getDayLabel(tz) {
+  const now = new Date();
+  const ld = new Date(now.toLocaleString('en-US', { timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone })).getDate();
+  const rd = new Date(now.toLocaleString('en-US', { timeZone: tz })).getDate();
+  const d = rd - ld;
+  if (d === 0) return '';
+  if (d === 1 || d < -25) return '+1 day';
+  if (d === -1 || d > 25) return '-1 day';
+  return '';
+}
+
+function getClockAngles(tz) {
+  const { h, m, s } = getTimeParts(tz);
+  const mm = parseInt(m), ss = parseInt(s);
+  return { hour: (h % 12) * 30 + mm * 0.5, min: mm * 6, sec: ss * 6 };
+}
+
+/* ═══════════════════════════════════════
+   CLOCKS RENDERING & DRAG REORDER
+═══════════════════════════════════════ */
+function buildClockHTML(z, i) {
+  const tzShort = z.tz.split('/').pop().replace(/_/g, ' ');
+  const offset = getOffset(z.tz);
+  return `
+    <div class="clock-card${z.home ? ' home' : ''}" draggable="true" id="card-${i}" data-tz="${z.tz}" data-home="${z.home}" ondragstart="dragStart(event,${i})" ondragover="dragOver(event,${i})" ondrop="dragDrop(event,${i})" ondragend="dragEnd(event)">
+      <div class="day-band" id="day-${i}"></div>
+      <div class="drag-handle"><span></span><span></span><span></span></div>
+      <div class="clock-analog" id="analog-${i}">
+        <svg viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="45" fill="none" stroke="var(--border)" stroke-width="2"/>
+          <line x1="50" y1="50" x2="50" y2="22" stroke="var(--text)" stroke-width="3.5" stroke-linecap="round" id="hand-h-${i}"/>
+          <line x1="50" y1="50" x2="50" y2="12" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" id="hand-m-${i}"/>
+          <line x1="50" y1="50" x2="50" y2="8" stroke="var(--accent)" stroke-width="1" stroke-linecap="round" id="hand-s-${i}"/>
+          <circle cx="50" cy="50" r="2.5" fill="var(--bg)"/>
+        </svg>
+      </div>
+      <div class="clock-info">
+        <div class="clock-city">
+          ${z.label} ${z.home ? '<span class="home-tag">BASE REFERENCE</span>' : ''}
+        </div>
+        <div class="clock-tz">${tzShort} · ${offset}</div>
+      </div>
+      <div class="clock-time-wrap">
+        <div class="clock-time" id="time-${i}">--:--</div>
+        <div class="clock-date" id="date-${i}">---</div>
+      </div>
+      <div class="card-actions">
+        <button class="remove-btn" onclick="removeZone(${i})" title="Remove">×</button>
+        ${z.home ? `<button class="change-home-btn" onclick="openHomeModal()">Change</button>` : `<button class="set-home-btn" onclick="setHome(${i})">Set Base</button>`}
+      </div>
+    </div>
+  `;
+}
+
+function renderClocks() {
+  const container = document.getElementById('clocksContainer');
+  if (userZones.length === 0) {
+    container.innerHTML = `<div class="empty-state"><div class="empty-icon">🗺️</div>No monitored track points. Type below to query a tracking zone.</div>`;
+    return;
+  }
+  
+  if (container.children.length !== userZones.length) {
+    container.innerHTML = userZones.map((z, i) => buildClockHTML(z, i)).join('');
+  }
+
+  userZones.forEach((z, i) => {
+    const card = document.getElementById(`card-${i}`);
+    if(card) {
+      card.setAttribute('data-tz', z.tz);
+      card.setAttribute('data-home', z.home);
+      if(z.home) card.classList.add('home'); else card.classList.remove('home');
+    }
+
+    const { h, h12, m, s, ampm } = getTimeParts(z.tz);
+    const timeStr = hourFormat === 12 
+      ? `${h12}:${m}<span class="secs">:${s}</span><span class="ampm">${ampm}</span>`
+      : `${h.toString().padStart(2,'0')}:${m}<span class="secs">:${s}</span>`;
       
-      if (tabId === 'clocks') {
-        document.getElementById('open-picker-btn').style.display = 'block';
-      } else {
-        document.getElementById('open-picker-btn').style.display = 'none';
-      }
+    const tEl = document.getElementById(`time-${i}`);
+    if(tEl) tEl.innerHTML = timeStr;
+    
+    const dEl = document.getElementById(`date-${i}`);
+    if(dEl) dEl.textContent = formatDate(z.tz);
+
+    const bEl = document.getElementById(`day-${i}`);
+    if(bEl) bEl.textContent = getDayLabel(z.tz);
+
+    const angles = getClockAngles(z.tz);
+    const hh = document.getElementById(`hand-h-${i}`);
+    const hm = document.getElementById(`hand-m-${i}`);
+    const hs = document.getElementById(`hand-s-${i}`);
+    if(hh) hh.setAttribute('transform', `rotate(${angles.hour} 50 50)`);
+    if(hm) hm.setAttribute('transform', `rotate(${angles.min} 50 50)`);
+    if(hs) hs.setAttribute('transform', `rotate(${angles.sec} 50 50)`);
+  });
+}
+
+function renderWorldBar() {
+  const bar = document.getElementById('worldBarCities');
+  const items = userZones.slice(0, 5);
+  bar.innerHTML = items.map(z => {
+    const { h, h12, m, ampm } = getTimeParts(z.tz);
+    const displayTime = hourFormat === 12 ? `${h12}:${m} ${ampm}` : `${h.toString().padStart(2,'0')}:${m}`;
+    return `
+      <div class="world-city">
+        <div class="world-city-name">${z.label}</div>
+        <div class="world-city-time">${displayTime}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+/* ── REORDER DRAG LOGIC ── */
+function dragStart(e, i) { dragSrcIndex = i; e.currentTarget.classList.add('dragging'); }
+function dragOver(e, i) { e.preventDefault(); if(i !== dragSrcIndex) e.currentTarget.classList.add('drag-over'); }
+function dragLeave(e) { e.currentTarget.classList.remove('drag-over'); }
+document.addEventListener('dragleave', e => { const c = e.target.closest('.clock-card'); if(c) c.classList.remove('drag-over'); });
+function dragDrop(e, targetIdx) {
+  e.stopPropagation();
+  if (dragSrcIndex !== null && dragSrcIndex !== targetIdx) {
+    const moved = userZones.splice(dragSrcIndex, 1)[0];
+    userZones.splice(targetIdx, 0, moved);
+    saveZones();
+    document.getElementById('clocksContainer').innerHTML = '';
+    renderClocks();
+    renderWorldBar();
+  }
+}
+function dragEnd(e) { e.currentTarget.classList.remove('dragging'); document.querySelectorAll('.clock-card').forEach(c=>c.classList.remove('drag-over')); }
+
+/* ═══════════════════════════════════════
+   ZONE LOGIC UTILITIES
+═══════════════════════════════════════ */
+function selectZone(tz, label) {
+  selectedTz = { tz, label };
+  document.getElementById('tzSearch').value = label;
+  document.getElementById('tzDropdown').classList.remove('open');
+}
+
+function addSelectedZone() {
+  if (!selectedTz) {
+    const query = document.getElementById('tzSearch').value.trim().toLowerCase();
+    const match = ZONES.find(z => z.label.toLowerCase() === query);
+    if (match) selectedTz = match;
+  }
+  if (!selectedTz) return;
+  
+  if (!isPremium && userZones.length >= FREE_LIMIT) {
+    openPremiumModal();
+    return;
+  }
+  if (userZones.some(z => z.tz === selectedTz.tz)) {
+    selectedTz = null;
+    document.getElementById('tzSearch').value = '';
+    return;
+  }
+  
+  userZones.push({ label: selectedTz.label, tz: selectedTz.tz, home: userZones.length === 0 });
+  saveZones();
+  selectedTz = null;
+  document.getElementById('tzSearch').value = '';
+  document.getElementById('clocksContainer').innerHTML = '';
+  renderClocks();
+  renderWorldBar();
+  updateUI();
+  populateAlarmTzSelect();
+}
+
+function removeZone(i) {
+  const removed = userZones.splice(i, 1)[0];
+  if (removed.home && userZones.length > 0) userZones[0].home = true;
+  saveZones();
+  document.getElementById('clocksContainer').innerHTML = '';
+  renderClocks();
+  renderWorldBar();
+  updateUI();
+  populateAlarmTzSelect();
+}
+
+function setHome(i) {
+  const zone = userZones[i];
+  if (!zone || zone.home) return;
+  userZones.forEach(z => z.home = false);
+  zone.home = true;
+  userZones.splice(i, 1);
+  userZones.unshift(zone);
+  saveZones();
+  document.getElementById('clocksContainer').innerHTML = '';
+  renderClocks();
+  updateUI();
+}
+
+/* ═══════════════════════════════════════
+   SEARCH & INTERACTIVE INTERFACE DROPDOWN
+═══════════════════════════════════════ */
+function onSearch() { selectedTz = null; openDropdown(); }
+function openDropdown() {
+  const query = document.getElementById('tzSearch').value.trim().toLowerCase();
+  const dropdown = document.getElementById('tzDropdown');
+  const addedTzs = new Set(userZones.map(z => z.tz));
+  
+  let filtered = ZONES.filter(z => z.label.toLowerCase().includes(query) || z.tz.toLowerCase().replace(/_/g, ' ').includes(query));
+  if (filtered.length === 0) {
+    dropdown.innerHTML = `<div class="tz-no-results">No results for "${query}"</div>`;
+    dropdown.classList.add('open');
+    return;
+  }
+  
+  dropdown.innerHTML = filtered.map(z => {
+    const isAdded = addedTzs.has(z.tz);
+    return `<div class="tz-option${isAdded ? ' selected' : ''}" onclick="${isAdded ? '' : `selectZone('${z.tz}','${z.label.replace(/'/g, "\\'")}')`}"><span class="tz-option-city">${z.label}</span><span class="tz-option-code">${z.tz.split('/')[0]} (${getOffset(z.tz)})</span></div>`;
+  }).join('');
+  dropdown.classList.add('open');
+}
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('.search-wrap')) document.getElementById('tzDropdown').classList.remove('open');
+});
+
+/* ═══════════════════════════════════════
+   BASE LOCATION MODAL MANAGEMENT
+═══════════════════════════════════════ */
+function openHomeModal() {
+  document.getElementById('homeSearchInput').value = '';
+  renderHomeModalList(ZONES);
+  document.getElementById('homeModal').classList.add('show');
+}
+function closeHomeModal() { document.getElementById('homeModal').classList.remove('remove'); document.getElementById('homeModal').classList.remove('show'); }
+function onHomeSearch() {
+  const q = document.getElementById('homeSearchInput').value.trim().toLowerCase();
+  const filtered = ZONES.filter(z => z.label.toLowerCase().includes(q) || z.tz.toLowerCase().replace(/_/g,' ').includes(q));
+  renderHomeModalList(filtered);
+}
+function renderHomeModalList(list) {
+  const container = document.getElementById('homeZoneListContainer');
+  const currentHome = userZones.find(z => z.home);
+  if(list.length === 0) {
+    container.innerHTML = `<div class="tz-no-results">No matches found</div>`;
+    return;
+  }
+  container.innerHTML = list.map(z => {
+    const isCurrent = currentHome && currentHome.tz === z.tz;
+    return `<div class="home-zone-item${isCurrent ? ' current' : ''}" onclick="selectNewHome('${z.tz}','${z.label.replace(/'/g, "\\'")}')"><span>${z.label}</span><span class="hz-code">${getOffset(z.tz)}</span></div>`;
+  }).join('');
+}
+function selectNewHome(tz, label) {
+  const existingIdx = userZones.findIndex(z => z.tz === tz);
+  if (existingIdx !== -1) {
+    userZones.forEach(z => z.home = false);
+    userZones[existingIdx].home = true;
+    const item = userZones.splice(existingIdx, 1)[0];
+    userZones.unshift(item);
+  } else {
+    userZones.forEach(z => z.home = false);
+    userZones.unshift({ label, tz, home: true });
+  }
+  saveZones();
+  closeHomeModal();
+  document.getElementById('clocksContainer').innerHTML = '';
+  renderClocks();
+  renderWorldBar();
+  updateUI();
+  populateAlarmTzSelect();
+}
+
+/* ═══════════════════════════════════════
+   ALARMS COMPONENT ENGINE
+═══════════════════════════════════════ */
+function populateAlarmTzSelect() {
+  const select = document.getElementById('alarmZoneSelect');
+  if(!select) return;
+  select.innerHTML = userZones.map((z, i) => `<option value="${i}">${z.label} (Local)</option>`).join('');
+}
+
+function addAlarm() {
+  const zoneIdx = document.getElementById('alarmZoneSelect').value;
+  const timeVal = document.getElementById('alarmTimeInput').value;
+  if (!timeVal || zoneIdx === '') return;
+  const zone = userZones[zoneIdx];
+  const id = Date.now().toString();
+  alarms.push({ id, label: '', time: timeVal, tz: zone.tz, zoneLabel: zone.label, enabled: true });
+  saveAlarms();
+  renderAlarms();
+}
+
+function deleteAlarm(id) {
+  alarms = alarms.filter(a => a.id !== id);
+  firingAlarmIds.delete(id);
+  delete lastFiredMinute[id];
+  saveAlarms();
+  if (firingAlarmIds.size === 0) document.getElementById('alarmOverlay').classList.remove('show');
+  renderAlarms();
+}
+
+function toggleAlarm(id) {
+  const alarm = alarms.find(a => a.id === id);
+  if (alarm) {
+    alarm.enabled = !alarm.enabled;
+    if (!alarm.enabled) {
+      firingAlarmIds.delete(id);
+      delete lastFiredMinute[id];
     }
-
-    // Modal Picker
-    const modal = document.getElementById('picker-modal');
-    document.getElementById('open-picker-btn').addEventListener('click', () => {
-      modal.classList.add('open');
-      renderPickerOptions('');
-    });
-
-    modal.addEventListener('click', (e) => {
-      if(e.target === modal) modal.classList.remove('open');
-    });
-
-    document.getElementById('city-search').addEventListener('input', (e) => {
-      renderPickerOptions(e.target.value);
-    });
-
-    function renderPickerOptions(filterText) {
-      const target = document.getElementById('search-results');
-      target.innerHTML = '';
-      AVAILABLE_CITIES.filter(c => c.name.toLowerCase().includes(filterText.toLowerCase())).forEach(city => {
-        const row = document.createElement('div');
-        row.className = 'city-option';
-        row.innerHTML = `<span>${city.name}</span><span style="color:var(--text-secondary)">${city.zone}</span>`;
-        row.onclick = () => {
-          if (!userTrackedZones.includes(city.zone)) {
-            userTrackedZones.push(city.zone);
-            localStorage.setItem('tracked_zones', JSON.stringify(userTrackedZones));
-            renderTrackedClocks();
-          }
-          modal.classList.remove('open');
-        };
-        target.appendChild(row);
-      });
-    }
-
-    function removeZone(zone) {
-      userTrackedZones = userTrackedZones.filter(z => z !== zone);
-      localStorage.setItem('tracked_zones', JSON.stringify(userTrackedZones));
-      renderTrackedClocks();
-    }
-
-    // Alarm Systems Engine
-    function renderAlarms() {
-      const container = document.getElementById('alarm-list');
-      container.innerHTML = '';
-      userAlarms.forEach((alarm, index) => {
-        const row = document.createElement('div');
-        row.className = 'list-item';
-        row.innerHTML = `<span style="font-family:'JetBrains Mono', monospace; font-size:1.25rem;">${alarm}</span>
-                         <button class="remove-btn" onclick="deleteAlarm(${index})">✕</button>`;
-        container.appendChild(row);
-      });
-    }
-
-    function addAlarm() {
-      const timeVal = document.getElementById('alarm-time').value;
-      if(timeVal && !userAlarms.includes(timeVal)) {
-        userAlarms.push(timeVal);
-        localStorage.setItem('user_alarms', JSON.stringify(userAlarms));
-        renderAlarms();
-      }
-    }
-
-    function deleteAlarm(index) {
-      userAlarms.splice(index, 1);
-      localStorage.setItem('user_alarms', JSON.stringify(userAlarms));
-      renderAlarms();
-    }
-
-    // Dropdown population loaders
-    function populateDropdowns() {
-      const convSelect = document.getElementById('conv-target-zone');
-      const lookupSelect = document.getElementById('lookup-zone');
-      
-      AVAILABLE_CITIES.forEach(city => {
-        const opt1 = new Option(city.name, city.zone);
-        const opt2 = new Option(city.name, city.zone);
-        convSelect.add(opt1);
-        lookupSelect.add(opt2);
-      });
-    }
-
-    // Time Zone Conversion Calculations
-    function runConversion() {
-      const baseTime = document.getElementById('conv-source-time').value;
-      const targetZone = document.getElementById('conv-target-zone').value;
-      if (!baseTime) return;
-
-      const [hrs, mins] = baseTime.split(':');
-      const dummyDate = new Date();
-      dummyDate.setHours(hrs, mins, 0);
-
-      const resultStr = dummyDate.toLocaleTimeString('en-US', {
-        timeZone: targetZone,
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false
-      });
-      document.getElementById('conv-result').innerText = resultStr;
-    }
-
-    // Quick Lookup Watcher
-    function runQuickLookup() {
-      const zone = document.getElementById('lookup-zone').value;
-      const now = new Date();
-      document.getElementById('lookup-time').innerText = now.toLocaleTimeString('en-US', { timeZone: zone, hour12: false });
-      document.getElementById('lookup-date').innerText = now.toLocaleDateString('en-US', { timeZone: zone, weekday: 'long', month: 'short', day: 'numeric' });
-    }
-
-    // Global Time Ticker
-    function tick() {
-      const now = new Date();
-      document.getElementById('local-time').innerText = now.toLocaleTimeString('en-US', { hour12: false });
-      document.getElementById('local-date').innerText = now.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-      document.getElementById('desk-time').innerText = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
-      document.getElementById('desk-date').innerText = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
-
-      // Run card rendering checks
-      userTrackedZones.forEach(zone => {
-        const elTime = document.getElementById(`time-${zone.replace(/\//g, '-')}`);
-        const elDate = document.getElementById(`date-${zone.replace(/\//g, '-')}`);
-        if(elTime && elDate) {
-          elTime.innerText = now.toLocaleTimeString('en-US', { timeZone: zone, hour12: false });
-          elDate.innerText = now.toLocaleDateString('en-US', { timeZone: zone, month: 'short', day: 'numeric' });
-        }
-      });
-
-      // Maintain background lookup loop
-      if (document.getElementById('lookup-tab').classList.contains('active')) {
-        runQuickLookup();
-      }
-
-      // Check Active Alarms
-      const localTimeShort = now.toTimeString().slice(0, 5);
-      if (userAlarms.includes(localTimeShort) && now.getSeconds() === 0) {
-        alert(`⏰ Alarm! It is exactly ${localTimeShort}`);
-      }
-    }
-
-    function renderTrackedClocks() {
-      const container = document.getElementById('tracked-clocks');
-      container.innerHTML = '';
-      userTrackedZones.forEach(zone => {
-        const safeId = zone.replace(/\//g, '-');
-        const card = document.createElement('div');
-        card.className = 'clock-card';
-        card.innerHTML = `
-          <div class="card-header">
-            <strong>${zone.split('/')[1].replace('_', ' ')}</strong>
-            <button class="remove-btn" onclick="removeZone('${zone}')">✕</button>
-          </div>
-          <div class="card-time" id="time-${safeId}">00:00:00</div>
-          <div class="card-date" id="date-${safeId}">...</div>
-        `;
-        container.appendChild(card);
-      });
-      tick();
-    }
-
-    function checkIosPrompt() {
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-      const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
-      if (isIOS && !isStandalone) {
-        document.getElementById('ios-banner').style.display = 'block';
-      }
-    }
-
-    function closeIosBanner() { document.getElementById('ios-banner').style.display = 'none'; }
-
-    // Bootstrap app
-    populateDropdowns();
-    renderTrackedClocks();
+    saveAlarms();
+    if (firingAlarmIds.size === 0) document.getElementById('alarmOverlay').classList.remove('show');
     renderAlarms();
-    setInterval(tick, 1000);
-    window.addEventListener('load', checkIosPrompt);
+  }
+}
 
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('./sw.js').catch(err => console.error(err));
+function updateAlarmLabel(id, text) {
+  const alarm = alarms.find(a => a.id === id);
+  if (alarm) { alarm.label = text; saveAlarms(); }
+}
+
+function dismissAlarm(id) {
+  firingAlarmIds.delete(id);
+  delete lastFiredMinute[id];
+  const card = document.getElementById('alarm-card-' + id);
+  if (card) card.classList.remove('firing');
+  if (firingAlarmIds.size === 0) document.getElementById('alarmOverlay').classList.remove('show');
+  renderAlarms();
+}
+
+function renderAlarms() {
+  const list = document.getElementById('alarmsList');
+  if(!list) return;
+  const home = userZones.find(z => z.home);
+  const homeTzEl = document.getElementById('alarmHomeTz');
+  if(home && homeTzEl) homeTzEl.textContent = 'Primary System Anchor Reference: ' + home.label + ' (' + getOffset(home.tz) + ')';
+  
+  if (alarms.length === 0) {
+    list.innerHTML = `<div class="alarm-empty"><div style="font-size:32px;margin-bottom:8px">⏰</div>No alarms configured. Select reference target city to establish reminder.</div>`;
+    return;
+  }
+  
+  list.innerHTML = alarms.map(a => {
+    const isFiring = firingAlarmIds.has(a.id);
+    const [h, m] = a.time.split(':');
+    let displayTime = a.time;
+    if (hourFormat === 12) {
+      const hr = parseInt(h);
+      displayTime = (hr % 12 || 12) + ':' + m + ' ' + (hr >= 12 ? 'PM' : 'AM');
     }
-  </script>
+    return `
+      <div class="alarm-card${isFiring ? ' firing' : ''}" id="alarm-card-${a.id}">
+        <div class="alarm-toggle${a.enabled ? ' on' : ''}" onclick="toggleAlarm('${a.id}')"></div>
+        <div class="alarm-info">
+          <div class="alarm-time-display">${displayTime}</div>
+          <div class="alarm-meta">${a.zoneLabel} Time Zone (${getOffset(a.tz)})</div>
+          <input type="text" class="alarm-label-input" placeholder="Label asset reminder..." value="${a.label}" onchange="updateAlarmLabel('${a.id}', this.value)">
+        </div>
+        <button class="alarm-dismiss-btn" onclick="dismissAlarm('${a.id}')">Clear</button>
+        <button class="alarm-del" onclick="deleteAlarm('${a.id}')">×</button>
+      </div>
+    `;
+  }).join('');
+}
+
+/* ── RUN-TIME BACKGROUND EVALUATION ── */
+function tickLookup() {
+  const now = new Date();
+  alarms.forEach(a => {
+    if (!a.enabled) return;
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: a.tz, hour: '2-digit', minute: '2-digit', hour12: false
+    });
+    const parts = formatter.formatToParts(now);
+    const currH = parts.find(p => p.type === 'hour').value;
+    const currM = parts.find(p => p.type === 'minute').value;
+    const currTimeStr = `${currH}:${currM}`;
+
+    if (currTimeStr === a.time) {
+      const minuteKey = now.getFullYear() + '-' + now.getMonth() + '-' + now.getDate() + '_' + currTimeStr;
+      if (lastFiredMinute[a.id] !== minuteKey) {
+        lastFiredMinute[a.id] = minuteKey;
+        triggerAlarmOverlay(a);
+      }
+    }
+  });
+}
+
+function triggerAlarmOverlay(a) {
+  firingAlarmIds.add(a.id);
+  currentFiringAlarm = a;
+  renderAlarms();
+
+  const overlay = document.getElementById('alarmOverlay');
+  document.getElementById('alarmOverlayLabel').textContent = a.label || 'ZoneClock Reminder';
+  
+  const [h, m] = a.time.split(':');
+  let timeText = a.time;
+  if(hourFormat === 12) {
+    const hr = parseInt(h);
+    timeText = (hr % 12 || 12) + ':' + m + ' ' + (hr >= 12 ? 'PM' : 'AM');
+  }
+  document.getElementById('alarmOverlayTime').textContent = `${timeText} (${a.zoneLabel} standard)`;
+  overlay.classList.add('show');
+
+  if (Notification.permission === 'granted') {
+    navigator.serviceWorker.ready.then(reg => {
+      reg.showNotification(a.label || 'Alarm Notification', {
+        body: `Your alarm for ${timeText} (${a.zoneLabel}) is firing!`,
+        icon: '/icon-192.png', badge: '/icon-32.png', tag: 'zoneclock-alarm',
+        requireInteraction: true,
+        actions: [{ action: 'dismiss', title: 'Dismiss' }, { action: 'snooze', title: 'Snooze 5 min' }]
+      });
+    });
+  }
+}
+
+function overlayDismiss() {
+  if (currentFiringAlarm) { dismissAlarm(currentFiringAlarm.id); currentFiringAlarm = null; }
+}
+function overlaySnooze() {
+  if (!currentFiringAlarm) return;
+  const a = currentFiringAlarm;
+  dismissAlarm(a.id);
+  currentFiringAlarm = null;
+
+  const now = new Date();
+  const targetTzDate = new Date(now.toLocaleString('en-US', { timeZone: a.tz }));
+  targetTzDate.setMinutes(targetTzDate.getMinutes() + 5);
+  const sh = targetTzDate.getHours().toString().padStart(2, '0');
+  const sm = targetTzDate.getMinutes().toString().padStart(2, '0');
+  const snoozeTime = `${sh}:${sm}`;
+
+  const id = Date.now().toString();
+  alarms.push({
+    id, label: a.label ? `${a.label} (Snoozed)` : 'Snoozed Remind',
+    time: snoozeTime, tz: a.tz, zoneLabel: a.zoneLabel, enabled: true
+  });
+  saveAlarms();
+  renderAlarms();
+}
+function snoozeOverlay() { overlaySnooze(); }
+
+function requestNotifPermission() {
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
+}
+
+/* ═══════════════════════════════════════
+   TIME ZONE CONVERTER LOGIC
+═══════════════════════════════════════ */
+function initConverter() {
+  const fromSel = document.getElementById('convFrom');
+  const toSel = document.getElementById('convTo');
+  if(!fromSel || !toSel) return;
+
+  const optionsHTML = ZONES.map(z => `<option value="${z.tz}">${z.label} (${getOffset(z.tz)})</option>`).join('');
+  fromSel.innerHTML = optionsHTML;
+  toSel.innerHTML = optionsHTML;
+
+  const home = userZones.find(z => z.home) || userZones[0];
+  if (home) fromSel.value = home.tz;
+  if (userZones[1]) toSel.value = userZones[1].tz; else toSel.value = ZONES[0].tz;
+
+  const now = new Date();
+  document.getElementById('convTime').value = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+  document.getElementById('convDate').value = now.toLocaleDateString('en-CA'); // YYYY-MM-DD
+
+  runConverter();
+}
+
+function getOffsetMinutes(tz, date) {
+  try {
+    const locStr = date.toLocaleString('en-US', { timeZone: tz });
+    const locDate = new Date(locStr);
+    const utcStr = date.toLocaleString('en-US', { timeZone: 'UTC' });
+    const utcDate = new Date(utcStr);
+    return (locDate.getTime() - utcDate.getTime()) / 60000;
+  } catch(e) { return 0; }
+}
+
+function runConverter() {
+  const fromTz = document.getElementById('convFrom').value;
+  const toTz = document.getElementById('convTo').value;
+  const timeVal = document.getElementById('convTime').value;
+  const dateVal = document.getElementById('convDate').value;
+  if (!timeVal || !dateVal) return;
+
+  const [h, m] = timeVal.split(':').map(Number);
+  const [yr, mo, dy] = dateVal.split('-').map(Number);
+
+  const candidate = new Date(Date.UTC(yr, mo - 1, dy, h, m, 0));
+  const fromOffsetMins = getOffsetMinutes(fromTz, candidate);
+  const utcDate = new Date(candidate.getTime() - fromOffsetMins * 60000);
+
+  const timePart = new Intl.DateTimeFormat('en-US', {
+    timeZone: toTz, hour: '2-digit', minute: '2-digit', hour12: hourFormat === 12
+  }).format(utcDate);
+  
+  const datePart = new Intl.DateTimeFormat('en-US', {
+    timeZone: toTz, weekday: 'long', month: 'long', day: 'numeric'
+  }).format(utcDate);
+
+  document.getElementById('convSingleResult').textContent = timePart;
+  document.getElementById('convSingleDate').textContent = datePart + ' · ' + getOffset(toTz);
+
+  const others = userZones.filter(z => z.tz !== fromTz && z.tz !== toTz);
+  const resultsGrid = document.getElementById('convResults');
+  if (others.length === 0) {
+    resultsGrid.innerHTML = `<div style="grid-column:1/-1;text-align:center;color:var(--muted);font-size:13px;padding:12px;">Add more tracking targets in the main panel to map parallel conversions.</div>`;
+    return;
+  }
+
+  resultsGrid.innerHTML = others.map(z => {
+    const tStr = new Intl.DateTimeFormat('en-US', { timeZone: z.tz, hour: '2-digit', minute: '2-digit', hour12: hourFormat === 12 }).format(utcDate);
+    const dStr = new Intl.DateTimeFormat('en-US', { timeZone: z.tz, weekday: 'short', month: 'short', day: 'numeric' }).format(utcDate);
+    return `
+      <div class="conv-result-card">
+        <div class="conv-result-city">${z.label}</div>
+        <div class="conv-result-time">${tStr}</div>
+        <div class="conv-result-date">${dStr} · ${getOffset(z.tz)}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function swapConverter() {
+  const fromEl = document.getElementById('convFrom');
+  const toEl = document.getElementById('convTo');
+  const tmp = fromEl.value;
+  fromEl.value = toEl.value;
+  toEl.value = tmp;
+  runConverter();
+}
+
+/* ═══════════════════════════════════════
+   MEETING SHIFT LOOKUP UTILITIES
+═══════════════════════════════════════ */
+function initMeetingLookup() {
+  const sel = document.getElementById('lookupTargetSelect');
+  if(!sel) return;
+  sel.innerHTML = ZONES.map(z => `<option value="${z.tz}">${z.label} (${getOffset(z.tz)})</option>`).join('');
+  if(userZones[1]) sel.value = userZones[1].tz;
+  runMeetingLookup();
+}
+
+function runMeetingLookup() {
+  const lookupTz = document.getElementById('lookupTargetSelect').value;
+  const match = ZONES.find(z => z.tz === lookupTz);
+  const cityName = match ? match.label : 'Target';
+
+  document.getElementById('lkEmpty').style.display = 'none';
+  document.getElementById('lkResults').style.display = 'block';
+
+  const descEl = document.getElementById('lkBestDesc');
+  descEl.textContent = `Standard office operations window for ${cityName} translated to your home base anchor:`;
+
+  const windows = [
+    { label: '09:00 AM Morning', th: 9 },
+    { label: '11:00 AM Midday', th: 11 },
+    { label: '02:00 PM Afternoon', th: 14 },
+    { label: '04:00 PM EOD Shift', th: 16 }
+  ];
+
+  const home = userZones.find(z => z.home) || userZones[0];
+  const homeLabel = home ? home.label : 'Home';
+  const now = new Date();
+  const theirToday = now.toLocaleDateString('en-CA', { timeZone: lookupTz });
+  const [ty, tm2, td] = theirToday.split('-').map(Number);
+
+  const bestEl = document.getElementById('lkBestTimes');
+  bestEl.innerHTML = windows.map(w => {
+    const candidate = new Date(Date.UTC(ty, tm2 - 1, td, w.th, 0, 0));
+    const offsetMins = getOffsetMinutes(lookupTz, candidate);
+    const utcDate = new Date(candidate.getTime() - offsetMins * 60000);
+    const homeTime = home ? new Intl.DateTimeFormat('en-US', { timeZone: home.tz, hour: '2-digit', minute: '2-digit', hour12: hourFormat === 12 }).format(utcDate) : '';
+    return `
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;text-align:center;">
+        <div style="font-family:var(--mono);font-size:13px;color:var(--accent);font-weight:600;">${w.label}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px;">Maps to local tracking:</div>
+        <div style="font-family:var(--mono);font-size:14px;color:var(--text);font-weight:700;margin-top:4px;">${homeTime}</div>
+        <div style="font-size:10px;color:var(--accent2);margin-top:1px;">in ${homeLabel}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+/* ═══════════════════════════════════════
+   INIT & TIME TRIGGER LOOP
+═══════════════════════════════════════ */
+populateAlarmTzSelect();
+renderClocks();
+renderWorldBar();
+renderAlarms();
+updateUI();
+requestNotifPermission();
+
+let lastSec = -1;
+function tick() {
+  const s = new Date().getSeconds();
+  if(s !== lastSec) {
+    lastSec = s;
+    renderClocks();
+    renderWorldBar();
+    if(s % 10 === 0) tickLookup();
+  }
+  requestAnimationFrame(tick);
+}
+requestAnimationFrame(tick);
+
+/* ═══════════════════════════════════════
+   SERVICE WORKER REGISTRATION
+═══════════════════════════════════════ */
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js')
+      .then(reg => console.log('ZoneClock SW registered:', reg.scope))
+      .catch(err => console.warn('SW registration failed:', err));
+  });
+  navigator.serviceWorker.addEventListener('message', e => {
+    if (e.data && e.data.action === 'snooze' && currentFiringAlarm) snoozeOverlay();
+  });
+}
+
+(function() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const tabParam = urlParams.get('tab');
+  if (tabParam) {
+    const btn = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.getAttribute('onclick').includes(`'${tabParam}'`));
+    if (btn) btn.click();
+  }
+})();
+</script>
 </body>
 </html>
