@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>ZoneClock — World Time Zones</title>
 
+<!-- PWA -->
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0a0a0f">
 <meta name="mobile-web-app-capable" content="yes">
@@ -15,11 +16,13 @@
 <link rel="icon" type="image/png" sizes="32x32" href="icon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 
+<!-- SEO -->
 <meta name="description" content="Live world clocks, alarms, and time zone converter. Free and works offline.">
 <meta property="og:title" content="ZoneClock — World Time Zones">
 <meta property="og:description" content="Live world clocks, alarms, and time zone converter.">
 <meta property="og:type" content="website">
 
+<!-- Fonts -->
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -37,7 +40,7 @@
     background-size:44px 44px; pointer-events:none; }
   .app { position:relative; z-index:1; max-width:800px; margin:0 auto; padding:36px 24px 80px; padding-top: max(36px, env(safe-area-inset-top, 36px)); padding-bottom: max(80px, calc(env(safe-area-inset-bottom, 0px) + 60px)); }
 
-  /* ── Header ── */
+  /* Header */
   .header { display:flex; align-items:center; justify-content:space-between; margin-bottom:28px; flex-wrap:wrap; gap:12px; }
   .logo { display:flex; align-items:center; gap:10px; }
   .logo-dot { width:10px; height:10px; border-radius:50%; background:var(--accent); box-shadow:0 0 14px var(--accent); animation:pulse 2s ease-in-out infinite; }
@@ -51,7 +54,7 @@
   .plan-badge { font-family:var(--mono); font-size:10px; padding:4px 12px; border-radius:20px; background:var(--surface2); border:1px solid var(--border); color:var(--muted); letter-spacing:0.8px; }
   .plan-badge.premium { border-color:var(--accent); color:var(--accent); background:rgba(200,240,96,0.07); }
 
-  /* ── Tabs ── */
+  /* Tabs */
   .tabs { display:flex; gap:4px; margin-bottom:28px; background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:4px; }
   .tab-btn { flex:1; padding:10px 8px; background:none; border:none; color:var(--muted); font-family:var(--font); font-size:13px; font-weight:600; cursor:pointer; border-radius:9px; transition:all 0.18s; display:flex; align-items:center; justify-content:center; gap:5px; white-space:nowrap; -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
   .tab-btn:hover { color:var(--text); background:rgba(255,255,255,0.04); }
@@ -60,7 +63,7 @@
   .tab-panel { display:none; }
   .tab-panel.active { display:block; }
 
-  /* ── World bar ── */
+  /* World bar */
   .world-bar { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:12px 16px; margin-bottom:24px; display:flex; align-items:center; gap:12px; overflow:hidden; }
   .world-bar-label { font-family:var(--mono); font-size:9px; color:var(--muted); letter-spacing:1.2px; text-transform:uppercase; white-space:nowrap; }
   .world-cities { display:flex; gap:0; overflow:hidden; flex:1; }
@@ -68,7 +71,7 @@
   .world-city-name { font-family:var(--mono); font-size:9px; color:var(--muted); letter-spacing:0.3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; width:100%; text-align:center; }
   .world-city-time { font-family:var(--mono); font-size:12px; font-weight:500; }
 
-  /* ── Add row ── */
+  /* Add row */
   .add-row { display:flex; gap:10px; margin-bottom:10px; }
   .search-wrap { position:relative; flex:1; }
   .search-icon { position:absolute; left:13px; top:50%; transform:translateY(-50%); width:16px; height:16px; color:var(--muted); pointer-events:none; }
@@ -92,7 +95,7 @@
   .limit-notice.show { display:flex; }
   .upgrade-link { color:var(--accent); text-decoration:underline; cursor:pointer; margin-left:auto; white-space:nowrap; font-weight:700; font-size:12px; }
 
-  /* ── Clock cards ── */
+  /* Clock cards */
   .section-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
   .section-label { font-family:var(--mono); font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); }
   .drag-hint { font-family:var(--mono); font-size:10px; color:var(--muted); opacity:0.6; }
@@ -131,7 +134,7 @@
   .empty-state { text-align:center; padding:56px 20px; color:var(--muted); font-size:14px; }
   .empty-icon { font-size:40px; margin-bottom:10px; }
 
-  /* ── ALARMS ── */
+  /* Alarms */
   .alarm-add-row { display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap; }
   .alarm-select { background:var(--surface); border:1px solid var(--border); border-radius:10px; color:var(--text); font-family:var(--font); font-size:15px; padding:10px 14px; outline:none; cursor:pointer; flex:1; min-width:120px; }
   .alarm-time-input { background:var(--surface); border:1px solid var(--border); border-radius:10px; color:var(--text); font-family:var(--mono); font-size:16px; padding:10px 14px; outline:none; flex:0 0 130px; }
@@ -158,7 +161,7 @@
   .alarm-del:hover { color:var(--danger); }
   .alarm-empty { text-align:center; padding:40px 20px; color:var(--muted); font-size:14px; }
 
-  /* ── CONVERTER ── */
+  /* Converter */
   .converter-box { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:24px 20px; margin-bottom:20px; }
   .converter-box h3 { font-size:16px; font-weight:700; margin-bottom:20px; display:flex; align-items:center; gap:8px; }
   .converter-box h3 .ch-icon { font-size:18px; }
@@ -174,7 +177,7 @@
   .conv-result-time { font-family:var(--mono); font-size:18px; color:var(--accent); }
   .conv-result-date { font-family:var(--mono); font-size:10px; color:var(--muted); margin-top:2px; }
 
-  /* ── Modals shared ── */
+  /* Modals shared */
   .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.72); z-index:200; display:none; align-items:center; justify-content:center; padding:20px; backdrop-filter:blur(6px); }
   .modal-overlay.show { display:flex; }
   .modal { background:var(--surface2); border:1px solid rgba(200,240,96,0.18); border-radius:22px; padding:36px 28px; max-width:420px; width:100%; animation:popIn 0.3s cubic-bezier(0.34,1.56,0.64,1); }
@@ -252,35 +255,22 @@
   ::-webkit-scrollbar-track { background:transparent; }
   ::-webkit-scrollbar-thumb { background:var(--border-hover); border-radius:4px; }
 
-  /* ══════════════════════════════════════
-     MOBILE — ≤ 540px
-  ══════════════════════════════════════ */
   @media (max-width: 540px) {
     .app { padding: 20px 14px 60px; }
-
-    /* Header */
     .header { margin-bottom: 18px; gap: 8px; }
     .logo-text { font-size: 17px; }
     .plan-badge { display: none; }
-
-    /* Tabs */
     .tabs { margin-bottom: 18px; padding: 3px; gap: 3px; }
     .tab-btn { padding: 9px 4px; font-size: 11px; gap: 3px; }
     .tab-btn .tab-icon { font-size: 16px; }
     .tab-text { display: none; }
-
-    /* World bar */
     .world-bar { padding: 10px 12px; gap: 8px; margin-bottom: 16px; }
     .world-bar-label { display: none; }
     .world-city-name { font-size: 8px; letter-spacing: 0; }
     .world-city-time { font-size: 11px; }
-
-    /* Add row */
     .add-row { gap: 8px; }
     .tz-search { font-size: 16px; padding: 11px 14px 11px 36px; }
     .add-btn { padding: 11px 14px; font-size: 13px; }
-
-    /* Clock cards */
     .clock-card { padding: 14px 14px; gap: 10px; border-radius: 14px; }
     .drag-handle { display: none; }
     .clock-analog { width: 38px; height: 38px; }
@@ -292,34 +282,25 @@
     .clock-time .ampm { font-size: 10px; }
     .clock-date { font-size: 10px; margin-top: 2px; }
     .day-band { right: 14px; top: 12px; font-size: 8px; }
-
-    /* Alarms */
     .alarm-add-row { gap: 8px; margin-bottom: 14px; }
     .alarm-select, .alarm-time-input, .alarm-add-btn { font-size: 14px; padding: 10px 12px; }
     .alarm-time-input { flex: 1; min-width: 90px; }
     .alarm-add-btn { flex: 1 1 100%; text-align: center; justify-content: center; }
     .alarm-card { padding: 12px 14px; gap: 10px; }
     .alarm-time-display { font-size: 19px; }
-
-    /* Converter */
     .converter-box { padding: 16px 14px; }
     .conv-row { gap: 8px; margin-bottom: 10px; }
     .conv-input, .conv-select { font-size: 14px; padding: 9px 12px; }
     .conv-result-grid { grid-template-columns: 1fr; gap: 8px; }
-
-    /* Modals */
     .modal { padding: 28px 20px; border-radius: 18px; }
     .modal h2 { font-size: 20px; }
     .home-modal { padding: 24px 18px; }
     .home-zone-item { padding: 14px 12px; font-size: 14px; }
-
-    /* Alarm overlay */
     .alarm-overlay-ring { font-size: 56px; }
     .alarm-overlay-label { font-size: 28px; }
     .alarm-overlay-dismiss { font-size: 16px; padding: 16px 40px; }
   }
 
-  /* Medium phones */
   @media (min-width: 541px) and (max-width: 640px) {
     .app { padding: 24px 18px 70px; }
     .clock-card { padding: 16px 18px; gap: 12px; }
@@ -342,6 +323,7 @@
     </div>
   </div>
 
+  <!-- Tabs -->
   <div class="tabs">
     <button class="tab-btn active" onclick="switchTab('clocks', this)"><span class="tab-icon">🕐</span><span class="tab-text">Clocks</span></button>
     <button class="tab-btn" onclick="switchTab('alarms', this)"><span class="tab-icon">⏰</span><span class="tab-text">Alarms</span></button>
@@ -349,27 +331,26 @@
     <button class="tab-btn" onclick="switchTab('lookup', this)"><span class="tab-icon">🔍</span><span class="tab-text">Meeting Lookup</span></button>
   </div>
 
+  <!-- Live World Bar -->
   <div class="world-bar">
     <div class="world-bar-label">Live Grid</div>
     <div class="world-cities" id="worldBarCities"></div>
   </div>
 
+  <!-- Limit Banner -->
   <div class="limit-notice" id="limitNotice">
     <span>⚠️ You reached the free limit of 4 clocks.</span>
     <span class="upgrade-link" onclick="openPremiumModal()">Upgrade to Premium</span>
   </div>
-
-  /* ═══════════════════════════════════════
-     TAB PANELS
-  ═══════════════════════════════════════ */
   
+  <!-- CLOCKS PANEL -->
   <div id="panel-clocks" class="tab-panel active">
     <div class="add-row">
       <div class="search-wrap">
         <span class="search-icon">
           <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
         </span>
-        <input type="text" class="tz-search" id="tzSearch" placeholder="Search city or country..." oninput="onSearch()" onfocus="onSearch()" autocomplete="off">
+        <input type="text" class="tz-search" id="tzSearch" placeholder="Search global standard city or region..." oninput="onSearch()" onfocus="onSearch()" autocomplete="off">
         <div class="tz-dropdown" id="tzDropdown"></div>
       </div>
       <button class="add-btn" id="addBtn" onclick="addSelectedZone()">Add Clock</button>
@@ -382,6 +363,7 @@
     <div class="clocks" id="clocksContainer"></div>
   </div>
 
+  <!-- ALARMS PANEL -->
   <div id="panel-alarms" class="tab-panel">
     <div class="alarm-add-row">
       <select class="alarm-select" id="alarmZoneSelect"></select>
@@ -392,6 +374,7 @@
     <div class="alarms-list" id="alarmsList"></div>
   </div>
 
+  <!-- CONVERTER PANEL -->
   <div id="panel-converter" class="tab-panel">
     <div class="converter-box">
       <h3><span class="ch-icon">📅</span> Base Reference Time</h3>
@@ -424,6 +407,7 @@
     <div class="conv-result-grid" id="convResults"></div>
   </div>
 
+  <!-- LOOKUP PANEL -->
   <div id="panel-lookup" class="tab-panel">
     <div class="converter-box" style="margin-bottom:16px;">
       <h3><span class="ch-icon">⚡</span> Quick Target Sync</h3>
@@ -441,10 +425,7 @@
   </div>
 </div>
 
-/* ═══════════════════════════════════════
-   MODALS & OVERLAYS
-═══════════════════════════════════════ */
-
+<!-- MODALS & OVERLAYS -->
 <div class="modal-overlay" id="premiumModal">
   <div class="modal">
     <div class="modal-icon">🚀</div>
@@ -485,151 +466,33 @@
   <button class="alarm-overlay-snooze" onclick="overlaySnooze()">Snooze 5 Minutes</button>
 </div>
 
-/* ═══════════════════════════════════════
-   CORE APPLICATION ENGINE SCRIPT
-═══════════════════════════════════════ */
 <script>
-/* ── HIGH DENSITY REGIONAL AND CONTINENTAL TIME ZONE DATABASE (120+ Key Hubs) ── */
-const ZONES = [
-  { label: "Aberdeen", tz: "Europe/London" },
-  { label: "Abidjan", tz: "Africa/Abidjan" },
-  { label: "Abu Dhabi", tz: "Asia/Dubai" },
-  { label: "Accra", tz: "Africa/Accra" },
-  { label: "Adelaide", tz: "Australia/Adelaide" },
-  { label: "Alexandria", tz: "Africa/Cairo" },
-  { label: "Algiers", tz: "Africa/Algiers" },
-  { label: "Amman", tz: "Asia/Amman" },
-  { label: "Amsterdam", tz: "Europe/Amsterdam" },
-  { label: "Anadyr", tz: "Asia/Anadyr" },
-  { label: "Anchorage", tz: "America/Anchorage" },
-  { label: "Ankara", tz: "Europe/Istanbul" },
-  { label: "Antananarivo", tz: "Indian/Antananarivo" },
-  { label: "Asuncion", tz: "America/Asuncion" },
-  { label: "Athens", tz: "Europe/Athens" },
-  { label: "Auckland", tz: "Pacific/Auckland" },
-  { label: "Azores", tz: "Atlantic/Azores" },
-  { label: "Baghdad", tz: "Asia/Baghdad" },
-  { label: "Baku", tz: "Asia/Baku" },
-  { label: "Bangkok", tz: "Asia/Bangkok" },
-  { label: "Beijing", tz: "Asia/Shanghai" },
-  { label: "Beirut", tz: "Asia/Beirut" },
-  { label: "Belgrade", tz: "Europe/Belgrade" },
-  { label: "Berlin", tz: "Europe/Berlin" },
-  { label: "Bogota", tz: "America/Bogota" },
-  { label: "Boston", tz: "America/New_York" },
-  { label: "Brasilia", tz: "America/Sao_Paulo" },
-  { label: "Brisbane", tz: "Australia/Brisbane" },
-  { label: "Brussels", tz: "Europe/Brussels" },
-  { label: "Bucharest", tz: "Europe/Bucharest" },
-  { label: "Budapest", tz: "Europe/Budapest" },
-  { label: "Buenos Aires", tz: "America/Argentina/Buenos_Aires" },
-  { label: "Cairo", tz: "Africa/Cairo" },
-  { label: "Cape Town", tz: "Africa/Johannesburg" },
-  { label: "Caracas", tz: "America/Caracas" },
-  { label: "Casablanca", tz: "Africa/Casablanca" },
-  { label: "Chatham", tz: "Pacific/Chatham" },
-  { label: "Chicago", tz: "America/Chicago" },
-  { label: "Chihuahua", tz: "America/Chihuahua" },
-  { label: "Copenhagen", tz: "Europe/Copenhagen" },
-  { label: "Dakar", tz: "Africa/Dakar" },
-  { label: "Dallas", tz: "America/Chicago" },
-  { label: "Dar es Salaam", tz: "Africa/Dar_es_Salaam" },
-  { label: "Darwin", tz: "Australia/Darwin" },
-  { label: "Denver", tz: "America/Denver" },
-  { label: "Dhaka", tz: "Asia/Dhaka" },
-  { label: "Doha", tz: "Asia/Qatar" },
-  { label: "Dublin", tz: "Europe/Dublin" },
-  { label: "Edmonton", tz: "America/Edmonton" },
-  { label: "Frankfurt", tz: "Europe/Frankfurt" },
-  { label: "Geneva", tz: "Europe/Zurich" },
-  { label: "Gibraltar", tz: "Europe/Gibraltar" },
-  { label: "Guatemala", tz: "America/Guatemala" },
-  { label: "Halifax", tz: "America/Halifax" },
-  { label: "Hanoi", tz: "Asia/Ho_Chi_Minh" },
-  { label: "Harare", tz: "Africa/Harare" },
-  { label: "Havana", tz: "America/Havana" },
-  { label: "Helsinki", tz: "Europe/Helsinki" },
-  { label: "Hong Kong", tz: "Asia/Hong_Kong" },
-  { label: "Honolulu", tz: "Pacific/Honolulu" },
-  { label: "Houston", tz: "America/Chicago" },
-  { label: "Hyderabad", tz: "Asia/Kolkata" },
-  { label: "Indianapolis", tz: "America/Indiana/Indianapolis" },
-  { label: "Islamabad", tz: "Asia/Karachi" },
-  { label: "Istanbul", tz: "Europe/Istanbul" },
-  { label: "Jakarta", tz: "Asia/Jakarta" },
-  { label: "Jerusalem", tz: "Asia/Jerusalem" },
-  { label: "Johannesburg", tz: "Africa/Johannesburg" },
-  { label: "Kabul", tz: "Asia/Kabul" },
-  { label: "Karachi", tz: "Asia/Karachi" },
-  { label: "Kathmandu", tz: "Asia/Kathmandu" },
-  { label: "Khartoum", tz: "Africa/Khartoum" },
-  { label: "Kiev", tz: "Europe/Kiev" },
-  { label: "Kolkata", tz: "Asia/Kolkata" },
-  { label: "Kuala Lumpur", tz: "Asia/Kuala_Lumpur" },
-  { label: "Kuwait", tz: "Asia/Kuwait" },
-  { label: "Lagos", tz: "Africa/Lagos" },
-  { label: "La Paz", tz: "America/La_Paz" },
-  { label: "Lima", tz: "America/Lima" },
-  { label: "Lisbon", tz: "Europe/Lisbon" },
-  { label: "London", tz: "Europe/London" },
-  { label: "Los Angeles", tz: "America/Los_Angeles" },
-  { label: "Luanda", tz: "Africa/Luanda" },
-  { label: "Luxembourg", tz: "Europe/Luxembourg" },
-  { label: "Madrid", tz: "Europe/Madrid" },
-  { label: "Malé", tz: "Indian/Maldives" },
-  { label: "Manila", tz: "Asia/Manila" },
-  { label: "Marrakesh", tz: "Africa/Casablanca" },
-  { label: "Melbourne", tz: "Australia/Melbourne" },
-  { label: "Mexico City", tz: "America/Mexico_City" },
-  { label: "Miami", tz: "America/New_York" },
-  { label: "Monaco", tz: "Europe/Monaco" },
-  { label: "Montreal", tz: "America/Toronto" },
-  { label: "Moscow", tz: "Europe/Moscow" },
-  { label: "Mumbai", tz: "Asia/Kolkata" },
-  { label: "Muscat", tz: "Asia/Muscat" },
-  { label: "Nairobi", tz: "Africa/Nairobi" },
-  { label: "New Delhi", tz: "Asia/Kolkata" },
-  { label: "New Orleans", tz: "America/Chicago" },
-  { label: "New York", tz: "America/New_York" },
-  { label: "Noumea", tz: "Pacific/Noumea" },
-  { label: "Oslo", tz: "Europe/Oslo" },
-  { label: "Ottawa", tz: "America/Ottawa" },
-  { label: "Paris", tz: "Europe/Paris" },
-  { label: "Perth", tz: "Australia/Perth" },
-  { label: "Phoenix", tz: "America/Phoenix" },
-  { label: "Prague", tz: "Europe/Prague" },
-  { label: "Reykjavik", tz: "Atlantic/Reykjavik" },
-  { label: "Rio de Janeiro", tz: "America/Sao_Paulo" },
-  { label: "Riyadh", tz: "Asia/Riyadh" },
-  { label: "Rome", tz: "Europe/Rome" },
-  { label: "San Francisco", tz: "America/Los_Angeles" },
-  { label: "Santiago", tz: "America/Santiago" },
-  { label: "Santo Domingo", tz: "America/Santo_Dominging" },
-  { label: "Sao Paulo", tz: "America/Sao_Paulo" },
-  { label: "Seattle", tz: "America/Los_Angeles" },
-  { label: "Seoul", tz: "Asia/Seoul" },
-  { label: "Shanghai", tz: "Asia/Shanghai" },
-  { label: "Singapore", tz: "Asia/Singapore" },
-  { label: "Sofia", tz: "Europe/Sofia" },
-  { label: "St. John's", tz: "America/St_Johns" },
-  { label: "Stockholm", tz: "Europe/Stockholm" },
-  { label: "Sydney", tz: "Australia/Sydney" },
-  { label: "Taipei", tz: "Asia/Taipei" },
-  { label: "Tashkent", tz: "Asia/Tashkent" },
-  { label: "Tehran", tz: "Asia/Tehran" },
-  { label: "Tokyo", tz: "Asia/Tokyo" },
-  { label: "Toronto", tz: "America/Toronto" },
-  { label: "Tripoli", tz: "Africa/Tripoli" },
-  { label: "Tunis", tz: "Africa/Tunis" },
-  { label: "Vancouver", tz: "America/Vancouver" },
-  { label: "Vienna", tz: "Europe/Vienna" },
-  { label: "Warsaw", tz: "Europe/Warsaw" },
-  { label: "Washington DC", tz: "America/New_York" },
-  { label: "Wellington", tz: "Pacific/Auckland" },
-  { label: "Winnipeg", tz: "America/Winnipeg" },
-  { label: "Zurich", tz: "Europe/Zurich" }
-].sort((a,b) => a.label.localeCompare(b.label));
+/* DYNAMIC OS CORE SYSTEM INTEGRATION — Pulls all IANA Time zones automatically */
+const getSystemZones = () => {
+  try {
+    if (Intl && typeof Intl.supportedValuesOf === 'function') {
+      return Intl.supportedValuesOf('timeZone').map(tz => {
+        const parts = tz.split('/');
+        const label = parts.length > 1 ? parts.slice(1).join('/').replace(/_/g, ' ') : parts[0].replace(/_/g, ' ');
+        return { label: label, tz: tz };
+      }).sort((a, b) => a.label.localeCompare(b.label));
+    }
+  } catch (e) { console.error("Native IANA lookup error, falling back", e); }
+  
+  // Fallback map in case of older sandbox environments
+  return [
+    { label: "Aberdeen", tz: "Europe/London" },
+    { label: "Cairo", tz: "Africa/Cairo" },
+    { label: "Dubai", tz: "Asia/Dubai" },
+    { label: "Houston", tz: "America/Chicago" },
+    { label: "London", tz: "Europe/London" },
+    { label: "New York", tz: "America/New_York" },
+    { label: "Singapore", tz: "Asia/Singapore" },
+    { label: "Tokyo", tz: "Asia/Tokyo" }
+  ];
+};
 
+const ZONES = getSystemZones();
 const FREE_LIMIT = 4;
 let isPremium = localStorage.getItem('zc_premium') === 'true';
 let hourFormat = parseInt(localStorage.getItem('zc_format')) || 12;
@@ -648,15 +511,9 @@ let currentFiringAlarm = null;
 let firingAlarmIds = new Set();
 let lastFiredMinute = {};
 
-/* ═══════════════════════════════════════
-   PERSISTENCE LAYER
-═══════════════════════════════════════ */
 function saveZones() { localStorage.setItem('zc_user_zones', JSON.stringify(userZones)); }
 function saveAlarms() { localStorage.setItem('zc_alarms', JSON.stringify(alarms)); }
 
-/* ═══════════════════════════════════════
-   NAVIGATION / TABS
-═══════════════════════════════════════ */
 function switchTab(tab, btn) {
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -676,9 +533,6 @@ function setFormat(fmt) {
   if(document.getElementById('panel-converter').classList.contains('active')) runConverter();
 }
 
-/* ═══════════════════════════════════════
-   PREMIUM HANDLING
-═══════════════════════════════════════ */
 function updateUI() {
   const badge = document.getElementById('planBadge');
   if(isPremium) {
@@ -691,8 +545,10 @@ function updateUI() {
   }
   const atLimit = !isPremium && userZones.length >= FREE_LIMIT;
   const btn = document.getElementById('addBtn');
-  btn.disabled = atLimit;
-  btn.title = atLimit ? 'Upgrade to add more zones' : '';
+  if(btn) {
+    btn.disabled = atLimit;
+    btn.title = atLimit ? 'Upgrade to add more zones' : '';
+  }
 }
 
 function openPremiumModal() { document.getElementById('premiumModal').classList.add('show'); }
@@ -704,9 +560,6 @@ function upgradeToPremium() {
   closePremiumModal();
 }
 
-/* ═══════════════════════════════════════
-   TIME OPERATIONS
-═══════════════════════════════════════ */
 function getTimeParts(tz) {
   const now = new Date();
   const formatter = new Intl.DateTimeFormat('en-US', {
@@ -751,9 +604,6 @@ function getClockAngles(tz) {
   return { hour: (h % 12) * 30 + mm * 0.5, min: mm * 6, sec: ss * 6 };
 }
 
-/* ═══════════════════════════════════════
-   CLOCKS RENDERING & DRAG REORDER
-═══════════════════════════════════════ */
 function buildClockHTML(z, i) {
   const tzShort = z.tz.split('/').pop().replace(/_/g, ' ');
   const offset = getOffset(z.tz);
@@ -790,6 +640,7 @@ function buildClockHTML(z, i) {
 
 function renderClocks() {
   const container = document.getElementById('clocksContainer');
+  if (!container) return;
   if (userZones.length === 0) {
     container.innerHTML = `<div class="empty-state"><div class="empty-icon">🗺️</div>No monitored track points. Type below to query a tracking zone.</div>`;
     return;
@@ -833,6 +684,7 @@ function renderClocks() {
 
 function renderWorldBar() {
   const bar = document.getElementById('worldBarCities');
+  if (!bar) return;
   const items = userZones.slice(0, 5);
   bar.innerHTML = items.map(z => {
     const { h, h12, m, ampm } = getTimeParts(z.tz);
@@ -846,7 +698,6 @@ function renderWorldBar() {
   }).join('');
 }
 
-/* ── REORDER DRAG LOGIC ── */
 function dragStart(e, i) { dragSrcIndex = i; e.currentTarget.classList.add('dragging'); }
 function dragOver(e, i) { e.preventDefault(); if(i !== dragSrcIndex) e.currentTarget.classList.add('drag-over'); }
 function dragLeave(e) { e.currentTarget.classList.remove('drag-over'); }
@@ -864,9 +715,6 @@ function dragDrop(e, targetIdx) {
 }
 function dragEnd(e) { e.currentTarget.classList.remove('dragging'); document.querySelectorAll('.clock-card').forEach(c=>c.classList.remove('drag-over')); }
 
-/* ═══════════════════════════════════════
-   ZONE LOGIC UTILITIES
-═══════════════════════════════════════ */
 function selectZone(tz, label) {
   selectedTz = { tz, label };
   document.getElementById('tzSearch').value = label;
@@ -926,13 +774,11 @@ function setHome(i) {
   updateUI();
 }
 
-/* ═══════════════════════════════════════
-   SEARCH & INTERACTIVE INTERFACE DROPDOWN
-═══════════════════════════════════════ */
 function onSearch() { selectedTz = null; openDropdown(); }
 function openDropdown() {
   const query = document.getElementById('tzSearch').value.trim().toLowerCase();
   const dropdown = document.getElementById('tzDropdown');
+  if(!dropdown) return;
   const addedTzs = new Set(userZones.map(z => z.tz));
   
   let filtered = ZONES.filter(z => z.label.toLowerCase().includes(query) || z.tz.toLowerCase().replace(/_/g, ' ').includes(query));
@@ -942,7 +788,7 @@ function openDropdown() {
     return;
   }
   
-  dropdown.innerHTML = filtered.map(z => {
+  dropdown.innerHTML = filtered.slice(0, 60).map(z => {
     const isAdded = addedTzs.has(z.tz);
     return `<div class="tz-option${isAdded ? ' selected' : ''}" onclick="${isAdded ? '' : `selectZone('${z.tz}','${z.label.replace(/'/g, "\\'")}')`}"><span class="tz-option-city">${z.label}</span><span class="tz-option-code">${z.tz.split('/')[0]} (${getOffset(z.tz)})</span></div>`;
   }).join('');
@@ -950,18 +796,20 @@ function openDropdown() {
 }
 
 document.addEventListener('click', e => {
-  if (!e.target.closest('.search-wrap')) document.getElementById('tzDropdown').classList.remove('open');
+  if (!e.target.closest('.search-wrap')) {
+    const drop = document.getElementById('tzDropdown');
+    if(drop) drop.classList.remove('open');
+  }
 });
 
-/* ═══════════════════════════════════════
-   BASE LOCATION MODAL MANAGEMENT
-═══════════════════════════════════════ */
 function openHomeModal() {
   document.getElementById('homeSearchInput').value = '';
   renderHomeModalList(ZONES);
   document.getElementById('homeModal').classList.add('show');
 }
-function closeHomeModal() { document.getElementById('homeModal').classList.remove('remove'); document.getElementById('homeModal').classList.remove('show'); }
+function closeHomeModal() { 
+  document.getElementById('homeModal').classList.remove('show'); 
+}
 function onHomeSearch() {
   const q = document.getElementById('homeSearchInput').value.trim().toLowerCase();
   const filtered = ZONES.filter(z => z.label.toLowerCase().includes(q) || z.tz.toLowerCase().replace(/_/g,' ').includes(q));
@@ -969,12 +817,13 @@ function onHomeSearch() {
 }
 function renderHomeModalList(list) {
   const container = document.getElementById('homeZoneListContainer');
+  if(!container) return;
   const currentHome = userZones.find(z => z.home);
   if(list.length === 0) {
     container.innerHTML = `<div class="tz-no-results">No matches found</div>`;
     return;
   }
-  container.innerHTML = list.map(z => {
+  container.innerHTML = list.slice(0, 60).map(z => {
     const isCurrent = currentHome && currentHome.tz === z.tz;
     return `<div class="home-zone-item${isCurrent ? ' current' : ''}" onclick="selectNewHome('${z.tz}','${z.label.replace(/'/g, "\\'")}')"><span>${z.label}</span><span class="hz-code">${getOffset(z.tz)}</span></div>`;
   }).join('');
@@ -999,9 +848,6 @@ function selectNewHome(tz, label) {
   populateAlarmTzSelect();
 }
 
-/* ═══════════════════════════════════════
-   ALARMS COMPONENT ENGINE
-═══════════════════════════════════════ */
 function populateAlarmTzSelect() {
   const select = document.getElementById('alarmZoneSelect');
   if(!select) return;
@@ -1091,7 +937,6 @@ function renderAlarms() {
   }).join('');
 }
 
-/* ── RUN-TIME BACKGROUND EVALUATION ── */
 function tickLookup() {
   const now = new Date();
   alarms.forEach(a => {
@@ -1120,6 +965,7 @@ function triggerAlarmOverlay(a) {
   renderAlarms();
 
   const overlay = document.getElementById('alarmOverlay');
+  if(!overlay) return;
   document.getElementById('alarmOverlayLabel').textContent = a.label || 'ZoneClock Reminder';
   
   const [h, m] = a.time.split(':');
@@ -1167,7 +1013,6 @@ function overlaySnooze() {
   saveAlarms();
   renderAlarms();
 }
-function snoozeOverlay() { overlaySnooze(); }
 
 function requestNotifPermission() {
   if ('Notification' in window && Notification.permission === 'default') {
@@ -1175,9 +1020,6 @@ function requestNotifPermission() {
   }
 }
 
-/* ═══════════════════════════════════════
-   TIME ZONE CONVERTER LOGIC
-═══════════════════════════════════════ */
 function initConverter() {
   const fromSel = document.getElementById('convFrom');
   const toSel = document.getElementById('convTo');
@@ -1193,7 +1035,7 @@ function initConverter() {
 
   const now = new Date();
   document.getElementById('convTime').value = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
-  document.getElementById('convDate').value = now.toLocaleDateString('en-CA'); // YYYY-MM-DD
+  document.getElementById('convDate').value = now.toLocaleDateString('en-CA');
 
   runConverter();
 }
@@ -1235,6 +1077,7 @@ function runConverter() {
 
   const others = userZones.filter(z => z.tz !== fromTz && z.tz !== toTz);
   const resultsGrid = document.getElementById('convResults');
+  if(!resultsGrid) return;
   if (others.length === 0) {
     resultsGrid.innerHTML = `<div style="grid-column:1/-1;text-align:center;color:var(--muted);font-size:13px;padding:12px;">Add more tracking targets in the main panel to map parallel conversions.</div>`;
     return;
@@ -1262,9 +1105,6 @@ function swapConverter() {
   runConverter();
 }
 
-/* ═══════════════════════════════════════
-   MEETING SHIFT LOOKUP UTILITIES
-═══════════════════════════════════════ */
 function initMeetingLookup() {
   const sel = document.getElementById('lookupTargetSelect');
   if(!sel) return;
@@ -1298,6 +1138,7 @@ function runMeetingLookup() {
   const [ty, tm2, td] = theirToday.split('-').map(Number);
 
   const bestEl = document.getElementById('lkBestTimes');
+  if(!bestEl) return;
   bestEl.innerHTML = windows.map(w => {
     const candidate = new Date(Date.UTC(ty, tm2 - 1, td, w.th, 0, 0));
     const offsetMins = getOffsetMinutes(lookupTz, candidate);
@@ -1314,9 +1155,6 @@ function runMeetingLookup() {
   }).join('');
 }
 
-/* ═══════════════════════════════════════
-   INIT & TIME TRIGGER LOOP
-═══════════════════════════════════════ */
 populateAlarmTzSelect();
 renderClocks();
 renderWorldBar();
@@ -1337,17 +1175,11 @@ function tick() {
 }
 requestAnimationFrame(tick);
 
-/* ═══════════════════════════════════════
-   SERVICE WORKER REGISTRATION
-═══════════════════════════════════════ */
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('sw.js')
       .then(reg => console.log('ZoneClock SW registered:', reg.scope))
       .catch(err => console.warn('SW registration failed:', err));
-  });
-  navigator.serviceWorker.addEventListener('message', e => {
-    if (e.data && e.data.action === 'snooze' && currentFiringAlarm) snoozeOverlay();
   });
 }
 
