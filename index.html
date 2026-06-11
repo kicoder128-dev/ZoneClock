@@ -12,9 +12,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ZoneClock">
-<link rel="apple-touch-icon" href="icon-180.png">
-<link rel="icon" type="image/png" sizes="32x32" href="icon-32.png">
-<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="ZoneClock_Icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="ZoneClock_Icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="ZoneClock_Icon.png">
 
 <!-- SEO -->
 <meta name="description" content="Live world clocks, alarms, and time zone converter. Free and works offline.">
@@ -38,7 +38,12 @@
   .grid-bg { position:fixed; inset:0; z-index:0;
     background-image: linear-gradient(rgba(255,255,255,0.022) 1px,transparent 1px), linear-gradient(90deg,rgba(255,255,255,0.022) 1px,transparent 1px);
     background-size:44px 44px; pointer-events:none; }
-  .app { position:relative; z-index:1; max-width:800px; margin:0 auto; padding:36px 24px 80px; padding-top: max(36px, env(safe-area-inset-top, 36px)); padding-bottom: max(80px, calc(env(safe-area-inset-bottom, 0px) + 60px)); }
+  .app { position:relative; z-index:1; max-width:800px; margin:0 auto; padding:36px 24px 80px; padding-top: max(52px, env(safe-area-inset-top, 52px)); padding-bottom: max(80px, calc(env(safe-area-inset-bottom, 0px) + 60px)); }
+
+  /* Safari browser mode: push content below address bar */
+  @supports (-webkit-touch-callout: none) {
+    .app { padding-top: max(64px, env(safe-area-inset-top, 64px)); }
+  }
 
   /* Header */
   .header { display:flex; align-items:center; justify-content:space-between; margin-bottom:28px; flex-wrap:wrap; gap:12px; }
@@ -256,7 +261,7 @@
   ::-webkit-scrollbar-thumb { background:var(--border-hover); border-radius:4px; }
 
   @media (max-width: 540px) {
-    .app { padding: 20px 14px 60px; }
+    .app { padding: 20px 14px 60px; padding-top: max(72px, env(safe-area-inset-top, 72px)); }
     .header { margin-bottom: 18px; gap: 8px; }
     .logo-text { font-size: 17px; }
     .plan-badge { display: none; }
@@ -313,7 +318,10 @@
 <div class="grid-bg"></div>
 <div class="app">
   <div class="header">
-    <div class="logo"><div class="logo-dot"></div><div class="logo-text">Zone<span>Clock</span></div></div>
+    <div class="logo">
+      <img src="ZoneClock_Icon.png" alt="ZoneClock" style="width:40px;height:40px;border-radius:10px;object-fit:cover;flex-shrink:0;">
+      <div class="logo-text">Zone<span>Clock</span></div>
+    </div>
     <div class="header-controls">
       <div class="toggle-wrap">
         <button class="toggle-btn active" id="btn12" onclick="setFormat(12)">12h</button>
