@@ -203,6 +203,7 @@
   .modal-overlay.show { display:flex; }
   .modal { background:var(--surface2); border:1px solid rgba(200,240,96,0.18); border-radius:22px; padding:36px 28px; max-width:420px; width:100%; animation:popIn 0.3s cubic-bezier(0.34,1.56,0.64,1); }
   @keyframes popIn { from{opacity:0;transform:scale(0.86)} to{opacity:1;transform:none} }
+  @keyframes slideUp { from{opacity:0;transform:translateY(60px)} to{opacity:1;transform:translateY(0)} }
   .modal-icon { font-size:32px; margin-bottom:16px; }
   .modal h2 { font-size:22px; font-weight:800; margin-bottom:8px; }
   .modal h2 span { color:var(--accent); }
@@ -382,9 +383,72 @@
     .desk-city { font-size: 13px; }
   }
 
-  @media (min-width: 900px) {
-    .desk-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+  /* ── LOGIN MODAL ── */
+  .login-overlay {
+    position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:600;
+    display:none;align-items:center;justify-content:center;padding:20px;
+    backdrop-filter:blur(8px);
   }
+  .login-overlay.show { display:flex; }
+  .login-box {
+    background:var(--surface2);border:1px solid rgba(200,240,96,0.2);
+    border-radius:22px;padding:36px 32px;max-width:380px;width:100%;
+    animation:popIn 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  .login-box h2 { font-size:22px;font-weight:800;margin-bottom:4px; }
+  .login-box h2 span { color:var(--accent); }
+  .login-box p { font-size:13px;color:var(--muted);margin-bottom:24px;line-height:1.5; }
+  .login-field { margin-bottom:14px; }
+  .login-field label { font-family:var(--mono);font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:6px; }
+  .login-input {
+    width:100%;background:var(--surface);border:1px solid var(--border);border-radius:10px;
+    color:var(--text);font-family:var(--font);font-size:15px;padding:12px 14px;
+    outline:none;transition:border-color 0.2s;-webkit-appearance:none;
+  }
+  .login-input:focus { border-color:rgba(200,240,96,0.4); }
+  .login-error { font-size:13px;color:var(--danger);margin-bottom:12px;display:none;padding:8px 12px;background:rgba(240,96,96,0.08);border-radius:8px;border:1px solid rgba(240,96,96,0.2); }
+  .login-error.show { display:block; }
+  .login-submit {
+    width:100%;padding:14px;background:var(--accent);color:#0a0a0f;border:none;
+    border-radius:12px;font-family:var(--font);font-weight:800;font-size:15px;
+    cursor:pointer;transition:opacity 0.18s;margin-bottom:12px;
+    -webkit-tap-highlight-color:transparent;touch-action:manipulation;
+  }
+  .login-submit:hover { opacity:0.85; }
+  .login-cancel { display:block;text-align:center;font-size:13px;color:var(--muted);cursor:pointer;padding:6px; }
+  .login-cancel:hover { color:var(--text); }
+
+  /* ── INSTALL PROMPT ── */
+  .install-overlay {
+    position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:550;
+    display:none;align-items:flex-end;justify-content:center;padding:0;
+    backdrop-filter:blur(4px);
+  }
+  .install-overlay.show { display:flex; }
+  .install-sheet {
+    background:var(--surface2);border:1px solid rgba(200,240,96,0.15);
+    border-radius:24px 24px 0 0;padding:28px 24px calc(28px + env(safe-area-inset-bottom,0px));
+    width:100%;max-width:600px;
+    animation:sheetUp 0.35s cubic-bezier(0.34,1.2,0.64,1);
+  }
+  @keyframes sheetUp { from{transform:translateY(100%)} to{transform:none} }
+  .install-sheet h3 { font-size:19px;font-weight:800;margin-bottom:6px;display:flex;align-items:center;gap:10px; }
+  .install-sheet p { font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:20px; }
+  .install-steps { display:flex;flex-direction:column;gap:10px;margin-bottom:22px; }
+  .install-step { display:flex;align-items:center;gap:14px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 16px; }
+  .install-step-num { width:28px;height:28px;border-radius:50%;background:rgba(200,240,96,0.12);border:1px solid rgba(200,240,96,0.3);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:12px;color:var(--accent);font-weight:700;flex-shrink:0; }
+  .install-step-text { font-size:13px;line-height:1.4; }
+  .install-step-text strong { color:var(--text); }
+  .install-step-text span { color:var(--muted); }
+  .install-action-btn {
+    width:100%;padding:15px;background:var(--accent);color:#0a0a0f;border:none;
+    border-radius:13px;font-family:var(--font);font-weight:800;font-size:15px;
+    cursor:pointer;margin-bottom:10px;-webkit-tap-highlight-color:transparent;touch-action:manipulation;
+    transition:opacity 0.18s;
+  }
+  .install-action-btn:hover { opacity:0.88; }
+  .install-dismiss { display:block;text-align:center;font-size:13px;color:var(--muted);cursor:pointer;padding:6px; }
+  .install-dismiss:hover { color:var(--text); }
 
   </style>
 </head>
@@ -402,7 +466,8 @@
         <button class="toggle-btn active" id="btn12" onclick="setFormat(12)">12h</button>
         <button class="toggle-btn" id="btn24" onclick="setFormat(24)">24h</button>
       </div>
-      <div class="plan-badge" id="planBadge">FREE PLAN</div>
+      <button id="loginBtn" onclick="openLoginModal()" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--muted);font-family:var(--mono);font-size:10px;padding:6px 12px;cursor:pointer;letter-spacing:0.5px;-webkit-tap-highlight-color:transparent;touch-action:manipulation;transition:color 0.18s,border-color 0.18s;">LOGIN</button>
+      <div class="plan-badge" id="planBadge">FREE</div>
     </div>
   </div>
 
@@ -551,6 +616,37 @@
   </div>
 </div>
 
+<!-- LOGIN MODAL -->
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-box">
+    <div style="font-size:28px;margin-bottom:12px;">🔐</div>
+    <h2>Sign in to <span>Premium</span></h2>
+    <p>Enter your ZoneClock premium credentials to unlock unlimited clocks and features.</p>
+    <div class="login-field">
+      <label>Username</label>
+      <input class="login-input" type="text" id="loginUser" placeholder="your username" autocomplete="username" autocapitalize="none"/>
+    </div>
+    <div class="login-field">
+      <label>Password</label>
+      <input class="login-input" type="password" id="loginPass" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')submitLogin()"/>
+    </div>
+    <div class="login-error" id="loginError">Incorrect username or password.</div>
+    <button class="login-submit" onclick="submitLogin()">Sign In</button>
+    <span class="login-cancel" onclick="closeLoginModal()">Cancel</span>
+  </div>
+</div>
+
+<!-- INSTALL PROMPT SHEET -->
+<div class="install-overlay" id="installOverlay">
+  <div class="install-sheet">
+    <h3><img src="icon-192.png" style="width:32px;height:32px;border-radius:8px;"> Add ZoneClock to your Home Screen</h3>
+    <p id="installDesc">Get the full app experience — works offline, launches instantly, and sends alarm notifications.</p>
+    <div class="install-steps" id="installSteps"></div>
+    <button class="install-action-btn" id="installActionBtn" onclick="installAction()">Add to Home Screen</button>
+    <span class="install-dismiss" onclick="dismissInstall()">Not now — remind me later</span>
+  </div>
+</div>
+
 <div class="alarm-overlay" id="alarmOverlay">
   <div class="alarm-overlay-ring">⏰</div>
   <div class="alarm-overlay-title">Firing Notification Alarm</div>
@@ -591,11 +687,15 @@ const FREE_LIMIT = 2;
 let isPremium = localStorage.getItem('zc_premium') === 'true';
 let hourFormat = parseInt(localStorage.getItem('zc_format')) || 12;
 
-let userZones = JSON.parse(localStorage.getItem('zc_user_zones')) || (() => {
+let userZones = (() => {
+  const saved = JSON.parse(localStorage.getItem('zc_user_zones'));
+  if (saved && saved.length > 0) {
+    // Hard-enforce free limit on load — trim if not premium and over limit
+    return (!isPremium && saved.length > FREE_LIMIT) ? saved.slice(0, FREE_LIMIT) : saved;
+  }
   // Auto-detect home timezone
   const homeTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const homeLabel = homeTz.split('/').pop().replace(/_/g,' ');
-  // Pick a sensible second clock based on region
   const secondMap = {
     'America': 'Europe/London', 'Europe': 'America/New_York',
     'Asia': 'Europe/London', 'Africa': 'Europe/London',
@@ -746,21 +846,130 @@ function setFormat(fmt) {
 
 function updateUI() {
   const badge = document.getElementById('planBadge');
-  if(isPremium) {
-    badge.textContent = "PREMIUM PLAN";
+  const loginBtn = document.getElementById('loginBtn');
+  if (isPremium) {
+    badge.textContent = "PREMIUM";
     badge.classList.add('premium');
     document.getElementById('limitNotice').classList.remove('show');
+    if (loginBtn) { loginBtn.textContent = 'LOGOUT'; loginBtn.style.color = 'var(--accent)'; loginBtn.style.borderColor = 'rgba(200,240,96,0.3)'; }
   } else {
-    badge.textContent = "FREE PLAN";
+    badge.textContent = "FREE";
     badge.classList.remove('premium');
+    if (loginBtn) { loginBtn.textContent = 'LOGIN'; loginBtn.style.color = ''; loginBtn.style.borderColor = ''; }
   }
+
   const atLimit = !isPremium && userZones.length >= FREE_LIMIT;
-  const btn = document.getElementById('addBtn');
-  if(btn) {
-    btn.disabled = atLimit;
-    btn.title = atLimit ? 'Upgrade to add more zones' : '';
+  const addBtn = document.getElementById('addBtn');
+  const searchInput = document.getElementById('tzSearch');
+  const searchWrap = document.querySelector('.search-wrap');
+
+  if (addBtn) {
+    addBtn.disabled = atLimit;
+    addBtn.style.opacity = atLimit ? '0.35' : '';
+    addBtn.style.cursor = atLimit ? 'not-allowed' : '';
+    addBtn.onclick = atLimit ? (e => { e.preventDefault(); openPremiumModal(); }) : addSelectedZone;
+  }
+  if (searchInput) {
+    searchInput.disabled = atLimit;
+    searchInput.placeholder = atLimit ? 'Upgrade to Premium to add more clocks' : 'Search global standard city or region...';
+  }
+  if (searchWrap) {
+    searchWrap.style.opacity = atLimit ? '0.4' : '';
+    searchWrap.style.pointerEvents = atLimit ? 'none' : '';
+  }
+  if (atLimit) {
+    document.getElementById('limitNotice').classList.add('show');
+    // Close dropdown if open
+    const dd = document.getElementById('tzDropdown');
+    if (dd) dd.style.display = 'none';
+  } else {
+    document.getElementById('limitNotice').classList.remove('show');
   }
 }
+
+/* ═══════════════════════════════════════
+   LOGIN SYSTEM
+   Credentials are hashed — do NOT store
+   plain text passwords in production.
+═══════════════════════════════════════ */
+// SHA-256 via SubtleCrypto (async)
+async function sha256(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+// ── YOUR PREMIUM ACCOUNT ──
+// Username: admin   Password: ZoneClock2025!
+// To change: run sha256('yourpassword') in console and paste the hash below
+const PREMIUM_ACCOUNTS = {
+  'admin': 'a621198b269e76b8f2792727a7585c3e572fbecfef95e9b22b975c07778b6b2b'
+};
+
+function openLoginModal() {
+  if (isPremium) { logout(); return; }
+  document.getElementById('loginUser').value = '';
+  document.getElementById('loginPass').value = '';
+  document.getElementById('loginError').classList.remove('show');
+  document.getElementById('loginOverlay').classList.add('show');
+  setTimeout(() => document.getElementById('loginUser').focus(), 100);
+}
+function closeLoginModal() { document.getElementById('loginOverlay').classList.remove('show'); }
+
+async function submitLogin() {
+  const user = document.getElementById('loginUser').value.trim().toLowerCase();
+  const pass = document.getElementById('loginPass').value;
+  const errEl = document.getElementById('loginError');
+  errEl.classList.remove('show');
+
+  const expectedHash = PREMIUM_ACCOUNTS[user];
+  if (!expectedHash) { errEl.classList.add('show'); return; }
+
+  const hash = await sha256(pass);
+  if (hash === expectedHash) {
+    isPremium = true;
+    localStorage.setItem('zc_premium', 'true');
+    localStorage.setItem('zc_user', user);
+    closeLoginModal();
+    updateUI();
+    renderClocks();
+    // Show welcome toast
+    showToast(`Welcome back, ${user}! Premium unlocked ✓`);
+  } else {
+    errEl.classList.add('show');
+    document.getElementById('loginPass').value = '';
+    document.getElementById('loginPass').focus();
+  }
+}
+
+function logout() {
+  if (!confirm('Sign out of Premium?')) return;
+  isPremium = false;
+  localStorage.removeItem('zc_premium');
+  localStorage.removeItem('zc_user');
+  // Trim zones back to free limit
+  if (userZones.length > FREE_LIMIT) {
+    userZones = userZones.slice(0, FREE_LIMIT);
+    saveZones();
+  }
+  updateUI();
+  renderClocks();
+  showToast('Signed out. You are now on the Free plan.');
+}
+
+function showToast(msg) {
+  let toast = document.getElementById('zcToast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'zcToast';
+    toast.style.cssText = 'position:fixed;bottom:calc(24px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--border-hover);color:var(--text);font-size:13px;padding:12px 20px;border-radius:12px;z-index:700;white-space:nowrap;box-shadow:0 8px 32px rgba(0,0,0,0.4);transition:opacity 0.3s;max-width:90vw;text-align:center;';
+    document.body.appendChild(toast);
+  }
+  toast.textContent = msg;
+  toast.style.opacity = '1';
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => toast.style.opacity = '0', 3000);
+}
+
 
 function openPremiumModal() { document.getElementById('premiumModal').classList.add('show'); }
 function closePremiumModal() { document.getElementById('premiumModal').classList.remove('show'); }
@@ -933,17 +1142,18 @@ function selectZone(tz, label) {
 }
 
 function addSelectedZone() {
+  // Hard guard — never allow free users past limit regardless of UI state
+  if (!isPremium && userZones.length >= FREE_LIMIT) {
+    openPremiumModal();
+    return;
+  }
   if (!selectedTz) {
     const query = document.getElementById('tzSearch').value.trim().toLowerCase();
     const match = ZONES.find(z => z.label.toLowerCase() === query);
     if (match) selectedTz = match;
   }
   if (!selectedTz) return;
-  
-  if (!isPremium && userZones.length >= FREE_LIMIT) {
-    openPremiumModal();
-    return;
-  }
+
   if (userZones.some(z => z.tz === selectedTz.tz)) {
     selectedTz = null;
     document.getElementById('tzSearch').value = '';
@@ -1396,14 +1606,114 @@ if ('serviceWorker' in navigator) {
   });
 }
 
+/* Handle ?tab= URL shortcuts */
 (function() {
   const urlParams = new URLSearchParams(window.location.search);
   const tabParam = urlParams.get('tab');
   if (tabParam) {
-    const btn = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.getAttribute('onclick').includes(`'${tabParam}'`));
+    const btn = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.getAttribute('onclick') && b.getAttribute('onclick').includes(`'${tabParam}'`));
     if (btn) btn.click();
   }
 })();
+
+/* ═══════════════════════════════════════
+   INSTALL POPUP
+═══════════════════════════════════════ */
+let deferredInstallPrompt = null;
+
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  // Show popup after 3 seconds on Android
+  if (!isRunningAsPWA() && !sessionStorage.getItem('zc_install_dismissed')) {
+    setTimeout(() => showInstallPopup('android'), 3000);
+  }
+});
+
+function isRunningAsPWA() {
+  return window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+}
+
+function getOS() {
+  const ua = navigator.userAgent;
+  if (/iPad|iPhone|iPod/.test(ua) && !window.MSStream) return 'ios';
+  if (/android/i.test(ua)) return 'android';
+  return 'desktop';
+}
+
+function showInstallPopup(type) {
+  if (isRunningAsPWA()) return;
+  if (sessionStorage.getItem('zc_install_dismissed')) return;
+  const popup = document.getElementById('installPopup');
+  if (!popup) return;
+  document.getElementById('installPopupAndroid').style.display = type === 'android' ? 'block' : 'none';
+  document.getElementById('installPopupIOS').style.display = type === 'ios' ? 'block' : 'none';
+  popup.style.display = 'flex';
+}
+
+function triggerInstall() {
+  if (!deferredInstallPrompt) return;
+  deferredInstallPrompt.prompt();
+  deferredInstallPrompt.userChoice.then(result => {
+    deferredInstallPrompt = null;
+    dismissInstallPopup();
+    if (result.outcome === 'accepted') showToast('✅ ZoneClock added to your home screen!');
+  });
+}
+
+function dismissInstallPopup() {
+  const popup = document.getElementById('installPopup');
+  if (popup) popup.style.display = 'none';
+  sessionStorage.setItem('zc_install_dismissed', '1');
+}
+
+// iOS: show after 4 seconds
+window.addEventListener('load', () => {
+  if (isRunningAsPWA()) return;
+  if (sessionStorage.getItem('zc_install_dismissed')) return;
+  if (getOS() === 'ios') setTimeout(() => showInstallPopup('ios'), 4000);
+});
+
+window.addEventListener('appinstalled', () => { dismissInstallPopup(); showToast('✅ ZoneClock installed!'); });
 </script>
+<!-- INSTALL POPUP MODAL -->
+<div id="installPopup" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:600;align-items:flex-end;justify-content:center;padding:0;backdrop-filter:blur(6px);">
+  <div style="background:var(--surface2);border:1px solid rgba(200,240,96,0.2);border-radius:22px 22px 0 0;padding:28px 24px calc(28px + env(safe-area-inset-bottom,0px));max-width:480px;width:100%;animation:slideUp 0.35s cubic-bezier(0.34,1.56,0.64,1);">
+    <div style="text-align:center;margin-bottom:20px;">
+      <img src="icon-192.png" style="width:64px;height:64px;border-radius:16px;margin-bottom:12px;">
+      <div style="font-size:20px;font-weight:800;margin-bottom:6px;">Add ZoneClock to your<br>Home Screen</div>
+      <div style="font-size:13px;color:var(--muted);line-height:1.6;">Get instant access, offline support and better alarm notifications — just like a native app.</div>
+    </div>
+
+    <!-- Android: one-tap install button -->
+    <div id="installPopupAndroid" style="display:none;">
+      <button onclick="triggerInstall()" style="width:100%;padding:16px;background:var(--accent);color:#0a0a0f;border:none;border-radius:14px;font-family:var(--font);font-weight:800;font-size:17px;cursor:pointer;margin-bottom:12px;-webkit-tap-highlight-color:transparent;touch-action:manipulation;">
+        ➕ Add to Home Screen
+      </button>
+    </div>
+
+    <!-- iOS: step-by-step instructions -->
+    <div id="installPopupIOS" style="display:none;">
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px;">
+        <div style="background:rgba(200,240,96,0.07);border:1px solid rgba(200,240,96,0.18);border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:12px;">
+          <span style="font-size:24px;flex-shrink:0;">1️⃣</span>
+          <span style="font-size:14px;">Tap the <strong>Share</strong> button <span style="font-size:18px;">⬆️</span> at the bottom of Safari</span>
+        </div>
+        <div style="background:rgba(200,240,96,0.07);border:1px solid rgba(200,240,96,0.18);border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:12px;">
+          <span style="font-size:24px;flex-shrink:0;">2️⃣</span>
+          <span style="font-size:14px;">Scroll down and tap <strong>Add to Home Screen</strong> <span style="font-size:18px;">➕</span></span>
+        </div>
+        <div style="background:rgba(200,240,96,0.07);border:1px solid rgba(200,240,96,0.18);border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:12px;">
+          <span style="font-size:24px;flex-shrink:0;">3️⃣</span>
+          <span style="font-size:14px;">Tap <strong>Add</strong> in the top right corner</span>
+        </div>
+      </div>
+    </div>
+
+    <button onclick="dismissInstallPopup()" style="width:100%;padding:13px;background:none;border:1px solid var(--border-hover);border-radius:12px;color:var(--muted);font-family:var(--font);font-size:14px;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;">
+      Maybe Later
+    </button>
+  </div>
+</div>
 </body>
 </html>
