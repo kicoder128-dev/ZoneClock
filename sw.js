@@ -5,30 +5,30 @@
    a new version of the app.
 ═══════════════════════════════════════ */
 
-const CACHE_VERSION = 'zoneclock-v1';
+const CACHE_VERSION = 'zoneclock-v3';
 
 const ASSETS_TO_CACHE = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  '/favicon.ico',
-  '/icon-16.png',
-  '/icon-32.png',
-  '/icon-57.png',
-  '/icon-60.png',
-  '/icon-72.png',
-  '/icon-76.png',
-  '/icon-96.png',
-  '/icon-114.png',
-  '/icon-120.png',
-  '/icon-128.png',
-  '/icon-144.png',
-  '/icon-152.png',
-  '/icon-167.png',
-  '/icon-180.png',
-  '/icon-192.png',
-  '/icon-256.png',
-  '/icon-512.png',
+  './index.html',
+  './index.html',
+  './manifest.json',
+  './favicon.ico',
+  './icon-16.png',
+  './icon-32.png',
+  './icon-57.png',
+  './icon-60.png',
+  './icon-72.png',
+  './icon-76.png',
+  './icon-96.png',
+  './icon-114.png',
+  './icon-120.png',
+  './icon-128.png',
+  './icon-144.png',
+  './icon-152.png',
+  './icon-167.png',
+  './icon-180.png',
+  './icon-192.png',
+  './icon-256.png',
+  './icon-512.png',
   'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap',
 ];
 
@@ -111,8 +111,8 @@ self.addEventListener('push', event => {
   const title = data.title || '⏰ ZoneClock Alarm';
   const options = {
     body: data.body || 'Your alarm is firing!',
-    icon: '/icon-192.png',
-    badge: '/icon-32.png',
+    icon: './icon-192.png',
+    badge: './icon-32.png',
     tag: 'zoneclock-alarm',
     requireInteraction: true,
     vibrate: [200, 100, 200, 100, 400],

@@ -2,36 +2,37 @@
   "name": "ZoneClock — World Time Zones",
   "short_name": "ZoneClock",
   "description": "Live world clocks, alarms, and time zone converter for any device.",
-  "start_url": "/",
+  "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#0a0a0f",
   "theme_color": "#0a0a0f",
   "orientation": "any",
   "categories": ["productivity", "utilities"],
   "icons": [
-    { "src": "/icon-72.png",  "sizes": "72x72",   "type": "image/png" },
-    { "src": "/icon-96.png",  "sizes": "96x96",   "type": "image/png" },
-    { "src": "/icon-128.png", "sizes": "128x128", "type": "image/png" },
-    { "src": "/icon-144.png", "sizes": "144x144", "type": "image/png" },
-    { "src": "/icon-152.png", "sizes": "152x152", "type": "image/png" },
-    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
-    { "src": "/icon-256.png", "sizes": "256x256", "type": "image/png" },
-    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+    { "src": "icon-72.png",  "sizes": "72x72",   "type": "image/png" },
+    { "src": "icon-96.png",  "sizes": "96x96",   "type": "image/png" },
+    { "src": "icon-128.png", "sizes": "128x128", "type": "image/png" },
+    { "src": "icon-144.png", "sizes": "144x144", "type": "image/png" },
+    { "src": "icon-152.png", "sizes": "152x152", "type": "image/png" },
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon-256.png", "sizes": "256x256", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
   ],
   "shortcuts": [
     {
       "name": "Alarms",
       "short_name": "Alarms",
       "description": "Go straight to your alarms",
-      "url": "/?tab=alarms",
-      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+      "url": "./index.html?tab=alarms",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
     },
     {
       "name": "Converter",
       "short_name": "Converter",
       "description": "Convert between time zones",
-      "url": "/?tab=converter",
-      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+      "url": "./index.html?tab=converter",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
     }
   ]
 }

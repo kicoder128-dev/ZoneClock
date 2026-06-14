@@ -14,23 +14,23 @@
 <meta name="apple-mobile-web-app-title" content="ZoneClock">
 <!-- Apple Touch Icons — all sizes -->
 <link rel="apple-touch-icon" href="icon-180.png">
-<link rel="apple-touch-icon" sizes="57x57"   href="/icon-57.png">
-<link rel="apple-touch-icon" sizes="60x60"   href="/icon-60.png">
-<link rel="apple-touch-icon" sizes="72x72"   href="/icon-72.png">
-<link rel="apple-touch-icon" sizes="76x76"   href="/icon-76.png">
-<link rel="apple-touch-icon" sizes="114x114" href="/icon-114.png">
-<link rel="apple-touch-icon" sizes="120x120" href="/icon-120.png">
-<link rel="apple-touch-icon" sizes="144x144" href="/icon-144.png">
-<link rel="apple-touch-icon" sizes="152x152" href="/icon-152.png">
-<link rel="apple-touch-icon" sizes="167x167" href="/icon-167.png">
-<link rel="apple-touch-icon" sizes="180x180" href="/icon-180.png">
+<link rel="apple-touch-icon" sizes="57x57"   href="icon-57.png">
+<link rel="apple-touch-icon" sizes="60x60"   href="icon-60.png">
+<link rel="apple-touch-icon" sizes="72x72"   href="icon-72.png">
+<link rel="apple-touch-icon" sizes="76x76"   href="icon-76.png">
+<link rel="apple-touch-icon" sizes="114x114" href="icon-114.png">
+<link rel="apple-touch-icon" sizes="120x120" href="icon-120.png">
+<link rel="apple-touch-icon" sizes="144x144" href="icon-144.png">
+<link rel="apple-touch-icon" sizes="152x152" href="icon-152.png">
+<link rel="apple-touch-icon" sizes="167x167" href="icon-167.png">
+<link rel="apple-touch-icon" sizes="180x180" href="icon-180.png">
 <!-- Favicons -->
 <link rel="icon" type="image/x-icon"  href="favicon.ico">
-<link rel="icon" type="image/png" sizes="16x16"  href="/icon-16.png">
-<link rel="icon" type="image/png" sizes="32x32"  href="/icon-32.png">
-<link rel="icon" type="image/png" sizes="96x96"  href="/icon-96.png">
-<link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
-<link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png">
+<link rel="icon" type="image/png" sizes="16x16"  href="icon-16.png">
+<link rel="icon" type="image/png" sizes="32x32"  href="icon-32.png">
+<link rel="icon" type="image/png" sizes="96x96"  href="icon-96.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
 
 <!-- SEO -->
 <meta name="description" content="Live world clocks, alarms, and time zone converter. Free and works offline.">
@@ -322,20 +322,79 @@
     .alarm-overlay-dismiss { font-size: 16px; padding: 16px 40px; }
   }
 
-  @media (min-width: 541px) and (max-width: 640px) {
-    .app { padding: 24px 18px 70px; }
-    .clock-card { padding: 16px 18px; gap: 12px; }
-    .clock-time { font-size: 26px; }
-    .tab-text { display: none; }
+  /* ── DESK VIEW ── */
+  .desk-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 16px;
   }
-</style>
+  .desk-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 22px 20px 18px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s, transform 0.15s;
+  }
+  .desk-card:hover { border-color: var(--border-hover); transform: translateY(-2px); }
+  .desk-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: var(--accent2); border-radius: 18px 18px 0 0;
+  }
+  .desk-card.home-card::before { background: var(--accent); }
+  .desk-city {
+    font-size: 15px; font-weight: 700; letter-spacing: -0.2px;
+    color: var(--text); text-align: center; white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis; width: 100%;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .desk-tz { font-family: var(--mono); font-size: 10px; color: var(--muted); text-align: center; }
+  .desk-analog { width: 100px; height: 100px; flex-shrink: 0; }
+  .desk-analog svg { width: 100px; height: 100px; }
+  .desk-time {
+    font-family: var(--mono); font-size: 32px; font-weight: 300;
+    letter-spacing: -1.5px; text-align: center; line-height: 1;
+  }
+  .desk-time .desk-secs { font-size: 18px; color: var(--muted); }
+  .desk-time .desk-ampm { font-size: 14px; color: var(--muted); margin-left: 3px; }
+  .desk-date { font-family: var(--mono); font-size: 11px; color: var(--muted); text-align: center; }
+  .desk-offset { font-family: var(--mono); font-size: 10px; color: var(--muted); text-align: center; opacity: 0.7; }
+  .desk-day-badge {
+    position: absolute; top: 12px; right: 12px;
+    font-family: var(--mono); font-size: 9px; color: var(--accent2);
+    letter-spacing: 0.5px; text-transform: uppercase;
+  }
+  .desk-card.home-card .desk-day-badge { color: var(--accent); }
+
+  @media (max-width: 540px) {
+    .desk-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .desk-card { padding: 16px 12px 14px; }
+    .desk-analog { width: 72px; height: 72px; }
+    .desk-analog svg { width: 72px; height: 72px; }
+    .desk-time { font-size: 22px; letter-spacing: -0.5px; }
+    .desk-time .desk-secs { font-size: 13px; }
+    .desk-time .desk-ampm { font-size: 11px; }
+    .desk-city { font-size: 13px; }
+  }
+
+  @media (min-width: 900px) {
+    .desk-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+  }
+
+  </style>
 </head>
 <body>
 <div class="grid-bg"></div>
 <div class="app">
   <div class="header">
     <div class="logo">
-      <img src="icon-192.png" alt="ZoneClock" style="width:40px;height:40px;border-radius:10px;object-fit:cover;flex-shrink:0;">
+      <img src="icon-192.png" alt="ZoneClock" style="width:38px;height:38px;border-radius:9px;object-fit:cover;flex-shrink:0;">
+      <div class="logo-dot"></div>
       <div class="logo-text">Zone<span>Clock</span></div>
     </div>
     <div class="header-controls">
@@ -352,7 +411,8 @@
     <button class="tab-btn active" onclick="switchTab('clocks', this)"><span class="tab-icon">🕐</span><span class="tab-text">Clocks</span></button>
     <button class="tab-btn" onclick="switchTab('alarms', this)"><span class="tab-icon">⏰</span><span class="tab-text">Alarms</span></button>
     <button class="tab-btn" onclick="switchTab('converter', this)"><span class="tab-icon">🔄</span><span class="tab-text">Converter</span></button>
-    <button class="tab-btn" onclick="switchTab('lookup', this)"><span class="tab-icon">🔍</span><span class="tab-text">Meeting Lookup</span></button>
+    <button class="tab-btn" onclick="switchTab('lookup', this)"><span class="tab-icon">🔍</span><span class="tab-text">Lookup</span></button>
+    <button class="tab-btn" onclick="switchTab('deskview', this)"><span class="tab-icon">🖥️</span><span class="tab-text">Desk View</span></button>
   </div>
 
   <!-- Live World Bar -->
@@ -363,7 +423,7 @@
 
   <!-- Limit Banner -->
   <div class="limit-notice" id="limitNotice">
-    <span>⚠️ You reached the free limit of 4 clocks.</span>
+    <span>⚠️ You reached the free limit of 2 clocks.</span>
     <span class="upgrade-link" onclick="openPremiumModal()">Upgrade to Premium</span>
   </div>
   
@@ -447,6 +507,16 @@
       Select a target town above to test standard operational shifts.
     </div>
   </div>
+
+  <!-- DESK VIEW PANEL -->
+  <div id="panel-deskview" class="tab-panel">
+    <div class="section-header" style="margin-bottom:16px;">
+      <div class="section-label">All Clocks — Desk View</div>
+      <div style="font-family:var(--mono);font-size:10px;color:var(--muted);" id="deskViewTime"></div>
+    </div>
+    <div id="deskViewGrid" class="desk-grid"></div>
+  </div>
+
 </div>
 
 <!-- MODALS & OVERLAYS -->
@@ -517,16 +587,28 @@ const getSystemZones = () => {
 };
 
 const ZONES = getSystemZones();
-const FREE_LIMIT = 4;
+const FREE_LIMIT = 2;
 let isPremium = localStorage.getItem('zc_premium') === 'true';
 let hourFormat = parseInt(localStorage.getItem('zc_format')) || 12;
 
-let userZones = JSON.parse(localStorage.getItem('zc_user_zones')) || [
-  { label: "Cairo", tz: "Africa/Cairo", home: true },
-  { label: "London", tz: "Europe/London", home: false },
-  { label: "New York", tz: "America/New_York", home: false },
-  { label: "Tokyo", tz: "Asia/Tokyo", home: false }
-];
+let userZones = JSON.parse(localStorage.getItem('zc_user_zones')) || (() => {
+  // Auto-detect home timezone
+  const homeTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const homeLabel = homeTz.split('/').pop().replace(/_/g,' ');
+  // Pick a sensible second clock based on region
+  const secondMap = {
+    'America': 'Europe/London', 'Europe': 'America/New_York',
+    'Asia': 'Europe/London', 'Africa': 'Europe/London',
+    'Pacific': 'America/Los_Angeles', 'Australia': 'Asia/Tokyo'
+  };
+  const region = homeTz.split('/')[0];
+  const secondTz = secondMap[region] || 'America/New_York';
+  const secondLabel = secondTz.split('/').pop().replace(/_/g,' ');
+  return [
+    { label: homeLabel, tz: homeTz, home: true },
+    { label: secondLabel, tz: secondTz, home: false }
+  ];
+})();
 
 let alarms = JSON.parse(localStorage.getItem('zc_alarms')) || [];
 let selectedTz = null;
@@ -546,6 +628,111 @@ function switchTab(tab, btn) {
 
   if(tab === 'converter') initConverter();
   if(tab === 'lookup') initMeetingLookup();
+  if(tab === 'deskview') renderDeskView();
+}
+
+/* ── DESK VIEW ── */
+function renderDeskView() {
+  const grid = document.getElementById('deskViewGrid');
+  if (!grid) return;
+  const now = new Date();
+
+  // Update header clock
+  const home = userZones.find(z => z.home) || userZones[0];
+  if (home) {
+    const { h, h12, m, s, ampm } = getTimeParts(home.tz);
+    const te = document.getElementById('deskViewTime');
+    if (te) te.textContent = hourFormat === 12 ? `${h12}:${m}:${s} ${ampm} — ${home.label}` : `${String(h).padStart(2,'0')}:${m}:${s} — ${home.label}`;
+  }
+
+  const needsRebuild = grid.children.length !== userZones.length ||
+    userZones.some((z,i) => { const c = document.getElementById(`desk-${i}`); return !c || c.dataset.tz !== z.tz; });
+
+  if (needsRebuild) {
+    grid.innerHTML = userZones.map((z, i) => {
+      const accent = z.home ? '#c8f060' : '#6077f0';
+      const tzShort = z.tz.split('/').pop().replace(/_/g,' ');
+      return `<div class="desk-card${z.home ? ' home-card' : ''}" id="desk-${i}" data-tz="${z.tz}">
+        <div class="desk-day-badge" id="desk-day-${i}"></div>
+        <div class="desk-city">
+          ${z.label}
+          ${z.home ? '<span style="font-size:9px;font-family:var(--mono);color:var(--accent);background:rgba(200,240,96,0.12);border:1px solid rgba(200,240,96,0.25);padding:2px 6px;border-radius:8px;">HOME</span>' : ''}
+        </div>
+        <div class="desk-tz" id="desk-tz-${i}">${tzShort}</div>
+        <div class="desk-analog" id="desk-ana-${i}"></div>
+        <div class="desk-time" id="desk-time-${i}"></div>
+        <div class="desk-date" id="desk-date-${i}"></div>
+        <div class="desk-offset" id="desk-off-${i}"></div>
+      </div>`;
+    }).join('');
+  }
+
+  userZones.forEach((z, i) => {
+    const { h, h12, m, s, ampm } = getTimeParts(z.tz);
+    const timeEl = document.getElementById(`desk-time-${i}`);
+    const dateEl = document.getElementById(`desk-date-${i}`);
+    const offEl  = document.getElementById(`desk-off-${i}`);
+    const dayEl  = document.getElementById(`desk-day-${i}`);
+    const anaEl  = document.getElementById(`desk-ana-${i}`);
+    if (!timeEl) return;
+
+    const timeStr = hourFormat === 12
+      ? `${h12}:${m}<span class="desk-secs">:${s}</span><span class="desk-ampm">${ampm}</span>`
+      : `${String(h).padStart(2,'0')}:${m}<span class="desk-secs">:${s}</span>`;
+    if (timeEl.innerHTML !== timeStr) timeEl.innerHTML = timeStr;
+
+    const ds = formatDate(z.tz);
+    if (dateEl.textContent !== ds) dateEl.textContent = ds;
+
+    const off = getOffset(z.tz);
+    if (offEl.textContent !== off) offEl.textContent = off;
+
+    const dl = getDayLabel(z.tz);
+    if (dayEl.textContent !== dl) dayEl.textContent = dl;
+
+    updateDeskAnalog(anaEl, z.tz, z.home);
+  });
+}
+
+function updateDeskAnalog(container, tz, isHome) {
+  const accent = isHome ? '#c8f060' : '#6077f0';
+  const { hour, min, sec } = getClockAngles(tz);
+  const cx = 50, cy = 50, r = 44;
+  const rad = a => a * Math.PI / 180;
+  const pt = (a, len) => [cx + Math.sin(rad(a)) * len, cy - Math.cos(rad(a)) * len];
+  const [hx,hy] = pt(hour, 24);
+  const [mx,my] = pt(min,  34);
+  const [sx,sy] = pt(sec,  40);
+  const circ    = 2 * Math.PI * r;
+  const dashLen = circ * (sec / 60);
+
+  // Hour tick marks
+  const ticks = Array.from({length:12},(_,i) => {
+    const a = i * 30, len = i % 3 === 0 ? 6 : 4;
+    const [x1,y1] = pt(a, r-len); const [x2,y2] = pt(a, r);
+    return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="rgba(255,255,255,0.15)" stroke-width="${i%3===0?1.5:1}" stroke-linecap="round"/>`;
+  }).join('');
+
+  if (!container.querySelector('svg')) {
+    container.innerHTML = `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="${cx}" cy="${cy}" r="${r}" stroke="rgba(255,255,255,0.07)" stroke-width="2" fill="none"/>
+      <circle id="darc" cx="${cx}" cy="${cy}" r="${r}" stroke="${accent}" stroke-width="2" fill="none"
+        stroke-dasharray="${dashLen} ${circ}" stroke-linecap="round" opacity="0.2"
+        transform="rotate(-90 ${cx} ${cy})"/>
+      ${ticks}
+      <line id="dhh" x1="${cx}" y1="${cy}" x2="${hx}" y2="${hy}" stroke="${accent}" stroke-width="4" stroke-linecap="round"/>
+      <line id="dmh" x1="${cx}" y1="${cy}" x2="${mx}" y2="${my}" stroke="rgba(240,240,248,0.9)" stroke-width="2.5" stroke-linecap="round"/>
+      <line id="dsh" x1="${cx}" y1="${cy}" x2="${sx}" y2="${sy}" stroke="${accent}" stroke-width="1.5" stroke-linecap="round" opacity="0.7"/>
+      <circle cx="${cx}" cy="${cy}" r="4" fill="${accent}"/>
+    </svg>`;
+    return;
+  }
+  const svg = container.querySelector('svg');
+  const set = (id, attrs) => { const el = svg.getElementById(id); if(el) Object.entries(attrs).forEach(([k,v]) => el.setAttribute(k,v)); };
+  set('darc', {'stroke-dasharray': `${dashLen} ${circ}`});
+  set('dhh',  {x2: hx, y2: hy});
+  set('dmh',  {x2: mx, y2: my});
+  set('dsh',  {x2: sx, y2: sy});
 }
 
 function setFormat(fmt) {
@@ -1194,6 +1381,8 @@ function tick() {
     renderClocks();
     renderWorldBar();
     if(s % 10 === 0) tickLookup();
+    // Update desk view if active
+    if(document.getElementById('panel-deskview').classList.contains('active')) renderDeskView();
   }
   requestAnimationFrame(tick);
 }
