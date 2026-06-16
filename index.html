@@ -582,7 +582,7 @@
 <!-- FULLSCREEN DESK VIEW -->
 <div id="deskViewOverlay" style="display:none;position:fixed;inset:0;z-index:800;background:var(--bg);overflow:hidden;width:100vw;height:100vh;height:100dvh;">
   <!-- Top bar — minimal, fades out after 3s of inactivity -->
-  <div id="deskViewBar" style="display:flex;align-items:center;justify-content:space-between;padding:max(14px,env(safe-area-inset-top,14px)) 20px 14px;position:absolute;top:0;left:0;right:0;z-index:2;background:linear-gradient(rgba(10,10,15,0.85),transparent);transition:opacity 0.4s;">
+  <div id="deskViewBar" style="display:flex;align-items:center;justify-content:space-between;padding:max(14px,env(safe-area-inset-top,14px)) 20px 12px;position:absolute;top:0;left:0;right:0;z-index:2;background:linear-gradient(rgba(10,10,15,0.92),rgba(10,10,15,0.4),transparent);transition:opacity 0.4s;" id="deskViewBar">
     <div style="display:flex;align-items:center;gap:8px;">
       <img src="icon-192.png" style="width:28px;height:28px;border-radius:7px;">
       <span style="font-size:14px;font-weight:700;color:var(--text);">Zone<span style="color:var(--accent);">Clock</span></span>
@@ -595,8 +595,8 @@
       </button>
     </div>
   </div>
-  <!-- Clock grid — fills 100% of remaining screen height, no scroll -->
-  <div id="deskViewGrid" style="position:absolute;inset:0;padding:0;display:grid;"></div>
+  <!-- Clock grid — positioned below bar, respects iOS safe-area -->
+  <div id="deskViewGrid" style="position:absolute;left:0;right:0;bottom:0;display:grid;" id="deskViewGrid"></div>
 </div>
 
 <!-- MODALS & OVERLAYS -->
@@ -774,40 +774,47 @@ function enterDeskView() {
 
 function layoutDeskGrid() {
   const grid = document.getElementById('deskViewGrid');
+  const bar  = document.getElementById('deskViewBar');
   if (!grid) return;
   const n = userZones.length;
   if (n === 0) return;
 
-  const vw = window.innerWidth;
-  const vh = window.innerHeight;
-  const isPortrait = vh > vw;
+  // Measure bar height after any pending reflow
+  requestAnimationFrame(() => {
+    const barH = bar ? bar.getBoundingClientRect().height : 60;
+    const vw   = window.innerWidth;
+    const vh   = window.innerHeight - barH;
 
-  // Calculate best grid dimensions so all cards fill 100% width AND height
-  // Try each possible number of columns and pick the one that gives biggest cards
-  let bestCols = 1, bestRows = n, bestCellH = 0;
-  for (let cols = 1; cols <= n; cols++) {
-    const rows = Math.ceil(n / cols);
-    const cellW = vw / cols;
-    const cellH = vh / rows;
-    const minDim = Math.min(cellW, cellH);
-    if (minDim > bestCellH) { bestCellH = minDim; bestCols = cols; bestRows = rows; }
-  }
+    // Position grid below bar
+    grid.style.top    = barH + 'px';
+    grid.style.bottom = '0';
+    grid.style.left   = '0';
+    grid.style.right  = '0';
 
-  // Top bar height (will overlay the grid but fade out)
-  const GAP = 2;
+    // Pick best column/row layout to fill the space
+    let bestCols = 1, bestCellScore = 0;
+    for (let cols = 1; cols <= n; cols++) {
+      const rows    = Math.ceil(n / cols);
+      const cellW   = vw   / cols;
+      const cellH   = vh   / rows;
+      const score   = Math.min(cellW, cellH);
+      if (score > bestCellScore) { bestCellScore = score; bestCols = cols; }
+    }
+    const bestRows = Math.ceil(n / bestCols);
 
-  grid.style.gridTemplateColumns = `repeat(${bestCols}, 1fr)`;
-  grid.style.gridTemplateRows = `repeat(${bestRows}, 1fr)`;
-  grid.style.gap = `${GAP}px`;
-  grid.style.padding = '0';
-  grid.style.width = '100vw';
-  grid.style.height = '100vh';
-  grid.style.height = '100dvh';
-  grid.style.overflow = 'hidden';
-  grid.style.alignItems = 'stretch';
-  grid.style.justifyItems = 'stretch';
-  grid.dataset.cols = bestCols;
-  grid.dataset.rows = bestRows;
+    grid.style.gridTemplateColumns = `repeat(${bestCols}, 1fr)`;
+    grid.style.gridTemplateRows    = `repeat(${bestRows}, 1fr)`;
+    grid.style.gap                 = '1px';
+    grid.style.overflow            = 'hidden';
+    grid.dataset.cols = bestCols;
+    grid.dataset.rows = bestRows;
+    grid.dataset.cellW = Math.floor(vw / bestCols);
+    grid.dataset.cellH = Math.floor(vh / bestRows);
+
+    // Force re-render now that dimensions are known
+    grid.innerHTML = '';
+    renderDeskView();
+  });
 }
 
 function deskBarTap() {
@@ -882,19 +889,22 @@ function renderDeskView() {
       : `${String(tp.h).padStart(2,'0')}:${tp.m}:${tp.s} — ${home.label}`;
   }
 
-  // Compute cell dimensions from grid layout
+  // Compute cell dimensions from grid layout (set by layoutDeskGrid)
   const n = userZones.length;
-  const cols = parseInt(grid.dataset.cols) || 1;
-  const rows = parseInt(grid.dataset.rows) || n;
-  const cellW = Math.floor(window.innerWidth / cols);
-  const cellH = Math.floor(window.innerHeight / rows);
+  const cols  = parseInt(grid.dataset.cols)  || 1;
+  const rows  = parseInt(grid.dataset.rows)  || n;
+  const cellW = parseInt(grid.dataset.cellW) || Math.floor(window.innerWidth  / cols);
+  const barH  = document.getElementById('deskViewBar')?.getBoundingClientRect().height || 60;
+  const availH = window.innerHeight - barH;
+  const cellH = parseInt(grid.dataset.cellH) || Math.floor(availH / rows);
 
   // Scale everything to fill the cell
-  const analogSize = Math.round(Math.min(cellW, cellH) * 0.38);
-  const cityFontSize = Math.max(11, Math.min(22, Math.round(cellW * 0.09)));
-  const timeFontSize = Math.max(16, Math.min(52, Math.round(cellW * 0.13)));
+  const analogSize   = Math.round(Math.min(cellW, cellH) * 0.44);
+  const cityFontSize = Math.max(11, Math.min(24, Math.round(cellW * 0.092)));
+  const timeFontSize = Math.max(14, Math.min(52, Math.round(cellW * 0.13)));
   const secFontSize  = Math.round(timeFontSize * 0.55);
-  const dateFontSize = Math.max(9, Math.min(14, Math.round(cellW * 0.045)));
+  const dateFontSize = Math.max(9,  Math.min(14, Math.round(cellW * 0.046)));
+  const gapSize      = Math.max(3,  Math.round(cellH * 0.022));
 
   const needsRebuild = grid.children.length !== n ||
     userZones.some((z, i) => { const c = document.getElementById(`desk-${i}`); return !c || c.dataset.tz !== z.tz; });
@@ -905,20 +915,20 @@ function renderDeskView() {
       const accent = z.home ? 'var(--accent)' : 'var(--accent2)';
       return `<div class="desk-card${z.home ? ' home-card' : ''}" id="desk-${i}" data-tz="${z.tz}"
         style="display:flex;flex-direction:column;align-items:center;justify-content:center;
-               gap:${Math.max(4, Math.round(cellH * 0.025))}px;
+               gap:${gapSize}px;
                padding:${Math.max(8, Math.round(cellH * 0.04))}px ${Math.max(6, Math.round(cellW * 0.04))}px;
-               border-radius:0;border:none;border-right:1px solid var(--border);
-               border-bottom:1px solid var(--border);position:relative;overflow:hidden;
-               background:var(--surface);">
+               border-radius:0;border:none;border-right:1px solid rgba(255,255,255,0.06);
+               border-bottom:1px solid rgba(255,255,255,0.06);position:relative;overflow:hidden;
+               background:linear-gradient(135deg,#12121a 0%,#0e0e18 100%);">
         <div class="desk-day-badge" id="desk-day-${i}" style="position:absolute;top:8px;right:10px;font-size:${Math.max(8,dateFontSize-1)}px;font-family:var(--mono);color:${accent};letter-spacing:0.5px;text-transform:uppercase;"></div>
-        <div style="font-size:${cityFontSize}px;font-weight:700;letter-spacing:-0.2px;text-align:center;
+        <div style="font-size:${cityFontSize}px;font-weight:800;letter-spacing:-0.3px;text-align:center;
                     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;
                     display:flex;align-items:center;justify-content:center;gap:6px;color:var(--text);">
           ${z.label}
           ${z.home ? `<span style="font-size:${Math.max(7,cityFontSize*0.55)}px;font-family:var(--mono);color:var(--accent);background:rgba(200,240,96,0.12);border:1px solid rgba(200,240,96,0.25);padding:1px 5px;border-radius:6px;">HOME</span>` : ''}
         </div>
         <div style="font-family:var(--mono);font-size:${Math.max(8,dateFontSize)}px;color:var(--muted);text-align:center;">${tzShort}</div>
-        <div class="desk-analog" id="desk-ana-${i}" style="width:${analogSize}px;height:${analogSize}px;flex-shrink:0;"></div>
+        <div class="desk-analog" id="desk-ana-${i}" style="width:${analogSize}px;height:${analogSize}px;flex-shrink:0;position:relative;"></div>
         <div class="desk-time" id="desk-time-${i}" style="font-family:var(--mono);font-size:${timeFontSize}px;font-weight:300;letter-spacing:-1px;text-align:center;line-height:1;"></div>
         <div style="font-family:var(--mono);font-size:${dateFontSize}px;color:var(--muted);text-align:center;" id="desk-date-${i}"></div>
         <div style="font-family:var(--mono);font-size:${Math.max(8,dateFontSize-1)}px;color:var(--muted);opacity:0.6;text-align:center;" id="desk-off-${i}"></div>
@@ -953,44 +963,139 @@ function renderDeskView() {
 }
 
 function updateDeskAnalog(container, tz, isHome) {
-  const accent = isHome ? '#c8f060' : '#6077f0';
+  const accent  = isHome ? '#c8f060' : '#6077f0';
+  const accentD = isHome ? '#8aad20' : '#3a55c8'; // darker shade for depth
   const { hour, min, sec } = getClockAngles(tz);
-  const cx = 50, cy = 50, r = 44;
+  const cx = 60, cy = 60, r = 52;
   const rad = a => a * Math.PI / 180;
   const pt  = (a, len) => [cx + Math.sin(rad(a)) * len, cy - Math.cos(rad(a)) * len];
-  const [hx, hy] = pt(hour, 24);
-  const [mx, my] = pt(min,  34);
-  const [sx, sy] = pt(sec,  40);
+  const [hx,hy] = pt(hour, 30);
+  const [mx,my] = pt(min,  42);
+  const [sx,sy] = pt(sec,  48);
   const circ    = 2 * Math.PI * r;
   const dashLen = circ * (sec / 60);
-  const ticks   = Array.from({length: 12}, (_, i) => {
-    const a = i * 30, len = i % 3 === 0 ? 7 : 4;
-    const [x1, y1] = pt(a, r - len);
-    const [x2, y2] = pt(a, r);
-    return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="rgba(255,255,255,0.18)" stroke-width="${i % 3 === 0 ? 2 : 1}" stroke-linecap="round"/>`;
+
+  // Hour markers — numbers at cardinal positions, dots elsewhere
+  const markers = Array.from({length: 12}, (_, i) => {
+    const a   = i * 30;
+    const num = i === 0 ? 12 : i;
+    const isCardinal = i % 3 === 0;
+    if (isCardinal) {
+      const [tx, ty] = pt(a, r - 14);
+      return `<text x="${tx}" y="${ty}" text-anchor="middle" dominant-baseline="central"
+        font-family="Inter,system-ui,sans-serif" font-size="9" font-weight="700"
+        fill="rgba(240,240,248,0.7)">${num}</text>`;
+    } else {
+      const [x1,y1] = pt(a, r - 8);
+      const [x2,y2] = pt(a, r - 4);
+      return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"
+        stroke="rgba(255,255,255,0.25)" stroke-width="1.5" stroke-linecap="round"/>`;
+    }
   }).join('');
 
-  const sz = container.style.width || '100px';
+  // Minute tick marks
+  const minTicks = Array.from({length: 60}, (_, i) => {
+    if (i % 5 === 0) return ''; // skip where hour markers are
+    const a = i * 6;
+    const [x1,y1] = pt(a, r - 5);
+    const [x2,y2] = pt(a, r - 3);
+    return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"
+      stroke="rgba(255,255,255,0.12)" stroke-width="1" stroke-linecap="round"/>`;
+  }).join('');
+
+  const uid = `dc_${container.id || Math.random().toString(36).slice(2)}`;
+
   if (!container.querySelector('svg')) {
-    container.innerHTML = `<svg viewBox="0 0 100 100" width="${sz}" height="${sz}" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="${cx}" cy="${cy}" r="${r}" stroke="rgba(255,255,255,0.07)" stroke-width="2" fill="none"/>
-      <circle id="darc" cx="${cx}" cy="${cy}" r="${r}" stroke="${accent}" stroke-width="2" fill="none"
-        stroke-dasharray="${dashLen} ${circ}" stroke-linecap="round" opacity="0.22" transform="rotate(-90 ${cx} ${cy})"/>
-      ${ticks}
-      <line id="dhh" x1="${cx}" y1="${cy}" x2="${hx}" y2="${hy}" stroke="${accent}" stroke-width="4.5" stroke-linecap="round"/>
-      <line id="dmh" x1="${cx}" y1="${cy}" x2="${mx}" y2="${my}" stroke="rgba(240,240,248,0.9)" stroke-width="3" stroke-linecap="round"/>
-      <line id="dsh" x1="${cx}" y1="${cy}" x2="${sx}" y2="${sy}" stroke="${accent}" stroke-width="1.5" stroke-linecap="round" opacity="0.75"/>
-      <circle cx="${cx}" cy="${cy}" r="4.5" fill="${accent}"/>
-      <circle cx="${cx}" cy="${cy}" r="2" fill="#0a0a0f"/>
+    container.innerHTML = `<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;overflow:visible;">
+      <defs>
+        <!-- Bezel gradient -->
+        <radialGradient id="${uid}_bg" cx="40%" cy="35%">
+          <stop offset="0%"   stop-color="#232330"/>
+          <stop offset="100%" stop-color="#0d0d14"/>
+        </radialGradient>
+        <!-- Glow filter for accent elements -->
+        <filter id="${uid}_glow" x="-40%" y="-40%" width="180%" height="180%">
+          <feGaussianBlur stdDeviation="2.5" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <!-- Subtle inner glow on ring -->
+        <filter id="${uid}_ringglow" x="-10%" y="-10%" width="120%" height="120%">
+          <feGaussianBlur stdDeviation="1.5" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+
+      <!-- Outer bezel ring -->
+      <circle cx="${cx}" cy="${cy}" r="${r+5}" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="1.5"/>
+
+      <!-- Clock face -->
+      <circle cx="${cx}" cy="${cy}" r="${r}" fill="url(#${uid}_bg)"/>
+
+      <!-- Subtle face texture ring -->
+      <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="8"/>
+
+      <!-- Accent arc (seconds progress) -->
+      <circle id="${uid}_arc" cx="${cx}" cy="${cy}" r="${r}"
+        fill="none" stroke="${accent}" stroke-width="2.5"
+        stroke-dasharray="${dashLen} ${circ}" stroke-linecap="round"
+        opacity="0.35" transform="rotate(-90 ${cx} ${cy})"
+        filter="url(#${uid}_ringglow)"/>
+
+      <!-- Tick marks & numbers -->
+      ${minTicks}
+      ${markers}
+
+      <!-- Hour hand — thick, rounded, glowing -->
+      <line id="${uid}_hh" x1="${cx}" y1="${cy}" x2="${hx}" y2="${hy}"
+        stroke="${accent}" stroke-width="5" stroke-linecap="round"
+        filter="url(#${uid}_glow)"/>
+      <!-- Hour hand inner lighter line for 3D feel -->
+      <line id="${uid}_hhi" x1="${cx}" y1="${cy}" x2="${hx}" y2="${hy}"
+        stroke="rgba(255,255,255,0.35)" stroke-width="1.5" stroke-linecap="round"/>
+
+      <!-- Minute hand -->
+      <line id="${uid}_mh" x1="${cx}" y1="${cy}" x2="${mx}" y2="${my}"
+        stroke="rgba(240,240,248,0.95)" stroke-width="3" stroke-linecap="round"/>
+      <line id="${uid}_mhi" x1="${cx}" y1="${cy}" x2="${mx}" y2="${my}"
+        stroke="rgba(255,255,255,0.3)" stroke-width="1" stroke-linecap="round"/>
+
+      <!-- Second hand — thin, accent colour -->
+      <line id="${uid}_sh" x1="${cx}" y1="${cy}" x2="${sx}" y2="${sy}"
+        stroke="${accent}" stroke-width="1.2" stroke-linecap="round"
+        opacity="0.9" filter="url(#${uid}_glow)"/>
+      <!-- Second hand tail (counter-balance) -->
+      <line id="${uid}_st" x1="${cx}" y1="${cy}"
+        x2="${cx + Math.sin(rad(sec*6+180))*10}" y2="${cy - Math.cos(rad(sec*6+180))*10}"
+        stroke="${accent}" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+
+      <!-- Centre cap -->
+      <circle cx="${cx}" cy="${cy}" r="5.5" fill="${accent}" filter="url(#${uid}_glow)"/>
+      <circle cx="${cx}" cy="${cy}" r="3"   fill="#0d0d14"/>
+      <circle cx="${cx}" cy="${cy}" r="1.2" fill="${accent}"/>
     </svg>`;
+    container.dataset.uid = uid;
     return;
   }
+
+  // Update hand positions in-place
   const svg = container.querySelector('svg');
-  const set = (id, attrs) => { const el = svg.getElementById(id); if (el) Object.entries(attrs).forEach(([k,v]) => el.setAttribute(k, v)); };
-  set('darc', {'stroke-dasharray': `${dashLen} ${circ}`});
-  set('dhh',  {x2: hx, y2: hy});
-  set('dmh',  {x2: mx, y2: my});
-  set('dsh',  {x2: sx, y2: sy});
+  const sid = container.dataset.uid || uid;
+  const get = id => svg.getElementById(id);
+  const setA = (el, attrs) => { if (el) Object.entries(attrs).forEach(([k,v]) => el.setAttribute(k,v)); };
+
+  setA(get(`${sid}_arc`), { 'stroke-dasharray': `${dashLen} ${circ}` });
+  setA(get(`${sid}_hh`),  { x2: hx, y2: hy });
+  setA(get(`${sid}_hhi`), { x2: hx, y2: hy });
+  setA(get(`${sid}_mh`),  { x2: mx, y2: my });
+  setA(get(`${sid}_mhi`), { x2: mx, y2: my });
+  setA(get(`${sid}_sh`),  { x2: sx, y2: sy });
+  // Update second hand tail
+  const tail = get(`${sid}_st`);
+  if (tail) {
+    const tailAngle = sec * 6 + 180;
+    const [tx, ty] = [cx + Math.sin(rad(tailAngle))*10, cy - Math.cos(rad(tailAngle))*10];
+    setA(tail, { x2: tx, y2: ty });
+  }
 }
 
 // Re-layout and re-render on resize
