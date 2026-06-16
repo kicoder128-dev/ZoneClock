@@ -945,219 +945,167 @@ function renderDeskView() {
 }
 
 function updateDeskAnalog(container, z, tp, size, dateFontSize, cityFontSize, timeFontSize) {
-  const isHome = z.home;
+  const isHome  = z.home;
   const accent  = isHome ? '#c8f060' : '#7888ff';
-  const accentG = isHome ? '#a8d040' : '#5566dd';
+  const accentD = isHome ? '#a8d040' : '#5566dd';
+
+  // Get angles — hour/min/sec are already in degrees from getClockAngles
   const { hour, min, sec } = getClockAngles(z.tz);
-  const cx = 100, cy = 100, r = 88;
-  const rad = a => a * Math.PI / 180;
-  const pt  = (a, len) => [+(cx + Math.sin(rad(a)) * len).toFixed(2), +(cy - Math.cos(rad(a)) * len).toFixed(2)];
 
-  const [hx,hy] = pt(hour, 50);
-  const [mx,my] = pt(min,  70);
-  const [sx,sy] = pt(sec,  80);
-  const tailAngle = sec * 6 + 180;
-  const [tx,ty]   = pt(tailAngle, 20);
+  const cx = 100, cy = 100, r = 86;
   const circ    = 2 * Math.PI * r;
-  const dashLen = +(circ * sec / 60).toFixed(2);
+  const dashLen = +(circ * parseInt(tp.s) / 60).toFixed(2);
 
-  // Luxury hour markers
-  const hourMarkers = Array.from({length:12}, (_,i) => {
-    const a   = i * 30;
-    const num = i === 0 ? 12 : i;
-    const isQuarter = i % 3 === 0;
-    if (isQuarter) {
-      // Wide batons at 12,3,6,9
-      const [ax,ay] = pt(a, r - 3);
-      const [bx,by] = pt(a, r - 16);
-      const perp = [-Math.cos(rad(a)) * 2.5, -Math.sin(rad(a)) * 2.5];
-      return `<line x1="${ax}" y1="${ay}" x2="${bx}" y2="${by}"
-        stroke="${accentG}" stroke-width="5" stroke-linecap="round" opacity="0.9"/>
-      <line x1="${ax}" y1="${ay}" x2="${bx}" y2="${by}"
-        stroke="white" stroke-width="1.5" stroke-linecap="round" opacity="0.4"/>`;
-    } else {
-      // Thin hour markers
-      const [ax,ay] = pt(a, r - 3);
-      const [bx,by] = pt(a, r - 10);
-      return `<line x1="${ax}" y1="${ay}" x2="${bx}" y2="${by}"
-        stroke="rgba(255,255,255,0.4)" stroke-width="2" stroke-linecap="round"/>`;
-    }
+  // Digital time string
+  const timeStr = hourFormat === 12 ? `${tp.h12}:${tp.m} ${tp.ampm}` : `${String(tp.h).padStart(2,'0')}:${tp.m}`;
+  const cityName = z.label.toUpperCase().slice(0, 12);
+  const shortTz  = z.tz.split('/').pop().replace(/_/g,' ').slice(0, 14);
+  const uid      = 'w' + container.id.replace(/\W/g,'');
+
+  // Hour tick markers
+  const markers = Array.from({length: 12}, (_, i) => {
+    const a    = i * 30;
+    const isQ  = i % 3 === 0;
+    const outer = r - 2;
+    const inner = isQ ? r - 16 : r - 9;
+    const sw    = isQ ? 4.5 : 2;
+    const col   = isQ ? accentD : 'rgba(255,255,255,0.35)';
+    const rad   = a * Math.PI / 180;
+    const x1 = +(cx + Math.sin(rad) * outer).toFixed(2);
+    const y1 = +(cy - Math.cos(rad) * outer).toFixed(2);
+    const x2 = +(cx + Math.sin(rad) * inner).toFixed(2);
+    const y2 = +(cy - Math.cos(rad) * inner).toFixed(2);
+    return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${col}" stroke-width="${sw}" stroke-linecap="round"/>`;
   }).join('');
 
-  // Minute dots (60 total)
-  const minDots = Array.from({length:60}, (_,i) => {
+  // Minute dots
+  const minDots = Array.from({length: 60}, (_, i) => {
     if (i % 5 === 0) return '';
-    const a = i * 6;
-    const [ax,ay] = pt(a, r - 3);
-    const [bx,by] = pt(a, r - 7);
-    return `<line x1="${ax}" y1="${ay}" x2="${bx}" y2="${by}"
-      stroke="rgba(255,255,255,0.18)" stroke-width="1" stroke-linecap="round"/>`;
+    const a   = i * 6 * Math.PI / 180;
+    const x1  = +(cx + Math.sin(a) * (r-2)).toFixed(2);
+    const y1  = +(cy - Math.cos(a) * (r-2)).toFixed(2);
+    const x2  = +(cx + Math.sin(a) * (r-6)).toFixed(2);
+    const y2  = +(cy - Math.cos(a) * (r-6)).toFixed(2);
+    return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="rgba(255,255,255,0.15)" stroke-width="1" stroke-linecap="round"/>`;
   }).join('');
 
-  // Digital time display (inside dial, upper area)
-  const timeStr = tp.h12 !== undefined
-    ? `${tp.h12}:${tp.m} ${tp.ampm}`
-    : `${String(tp.h).padStart(2,'0')}:${tp.m}`;
+  // --- Build SVG from scratch always, update in-place if exists ---
+  const buildSVG = () => `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"
+    style="width:${size}px;height:${size}px;display:block;">
+    <defs>
+      <radialGradient id="${uid}bg" cx="45%" cy="38%" r="68%">
+        <stop offset="0%"  stop-color="#252535"/>
+        <stop offset="60%" stop-color="#12121c"/>
+        <stop offset="100%" stop-color="#07070e"/>
+      </radialGradient>
+      <radialGradient id="${uid}bz" cx="50%" cy="20%" r="75%">
+        <stop offset="0%"  stop-color="#4e4e60"/>
+        <stop offset="50%" stop-color="#28283a"/>
+        <stop offset="100%" stop-color="#14141e"/>
+      </radialGradient>
+      <filter id="${uid}gl" x="-60%" y="-60%" width="220%" height="220%">
+        <feGaussianBlur stdDeviation="4" result="b"/>
+        <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+      <filter id="${uid}sg" x="-30%" y="-30%" width="160%" height="160%">
+        <feGaussianBlur stdDeviation="2" result="b"/>
+        <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+      <filter id="${uid}sh" x="-20%" y="-20%" width="140%" height="140%">
+        <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.7"/>
+      </filter>
+    </defs>
 
-  const uid = `dw_${i}_${z.tz.replace(/\W/g,'_')}`;
-  const shortTz = z.tz.split('/').pop().replace(/_/g,' ');
-  const cityName = z.label;
+    <!-- Bezel -->
+    <circle cx="${cx}" cy="${cy}" r="${r+10}" fill="url(#${uid}bz)"/>
+    <circle cx="${cx}" cy="${cy}" r="${r+10}" fill="none" stroke="rgba(255,255,255,0.10)" stroke-width="0.8"/>
+    <circle cx="${cx}" cy="${cy}" r="${r+5}"  fill="none" stroke="rgba(0,0,0,0.6)"        stroke-width="2"/>
+
+    <!-- Face -->
+    <circle cx="${cx}" cy="${cy}" r="${r}" fill="url(#${uid}bg)"/>
+    <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+
+    <!-- Seconds ring -->
+    <circle id="${uid}arc" cx="${cx}" cy="${cy}" r="${r-7}"
+      fill="none" stroke="${accent}" stroke-width="2.5"
+      stroke-dasharray="${dashLen} ${circ}" stroke-linecap="round"
+      opacity="0.45" transform="rotate(-90 ${cx} ${cy})"
+      filter="url(#${uid}sg)"/>
+
+    <!-- Ticks -->
+    ${minDots}
+    ${markers}
+
+    <!-- City name sub-dial -->
+    <rect x="62" y="56" width="76" height="26" rx="4"
+      fill="rgba(0,0,0,0.5)" stroke="rgba(255,255,255,0.07)" stroke-width="0.5"/>
+    <text x="${cx}" y="64" text-anchor="middle" dominant-baseline="central"
+      font-family="Inter,system-ui,sans-serif" font-size="7" font-weight="800"
+      fill="rgba(255,255,255,0.6)" letter-spacing="1.5">${cityName}</text>
+    <text id="${uid}dt" x="${cx}" y="76" text-anchor="middle" dominant-baseline="central"
+      font-family="'JetBrains Mono',ui-monospace,monospace" font-size="8.5"
+      fill="${accent}" letter-spacing="0.5">${timeStr}</text>
+
+    <!-- HOME marker -->
+    ${isHome ? `<text x="${cx}" y="131" text-anchor="middle" dominant-baseline="central"
+      font-family="Inter,system-ui,sans-serif" font-size="5.5" font-weight="700"
+      fill="${accent}" letter-spacing="2" opacity="0.75">◆ HOME ◆</text>` : ''}
+
+    <!-- TZ sub-dial -->
+    <rect x="72" y="138" width="56" height="13" rx="3"
+      fill="rgba(0,0,0,0.4)" stroke="rgba(255,255,255,0.05)" stroke-width="0.5"/>
+    <text x="${cx}" y="145" text-anchor="middle" dominant-baseline="central"
+      font-family="'JetBrains Mono',ui-monospace,monospace" font-size="6"
+      fill="rgba(200,200,220,0.5)" letter-spacing="0.3">${shortTz}</text>
+
+    <!-- HOUR HAND — tapered, rotated via transform -->
+    <g id="${uid}hh" transform="rotate(${hour} ${cx} ${cy})">
+      <line x1="${cx}" y1="${cy+16}" x2="${cx}" y2="${cy-52}"
+        stroke="${accent}" stroke-width="5.5" stroke-linecap="round" filter="url(#${uid}sh)"/>
+      <line x1="${cx}" y1="${cy+10}" x2="${cx}" y2="${cy-50}"
+        stroke="rgba(255,255,255,0.4)" stroke-width="1.5" stroke-linecap="round"/>
+    </g>
+
+    <!-- MINUTE HAND -->
+    <g id="${uid}mh" transform="rotate(${min} ${cx} ${cy})">
+      <line x1="${cx}" y1="${cy+18}" x2="${cx}" y2="${cy-72}"
+        stroke="rgba(235,235,248,0.95)" stroke-width="3.5" stroke-linecap="round" filter="url(#${uid}sh)"/>
+      <line x1="${cx}" y1="${cy+12}" x2="${cx}" y2="${cy-70}"
+        stroke="rgba(255,255,255,0.5)" stroke-width="1" stroke-linecap="round"/>
+    </g>
+
+    <!-- SECOND HAND — thin racing style -->
+    <g id="${uid}sh2" transform="rotate(${sec} ${cx} ${cy})">
+      <line x1="${cx}" y1="${cy+22}" x2="${cx}" y2="${cy-80}"
+        stroke="${accent}" stroke-width="1.2" stroke-linecap="round" filter="url(#${uid}gl)"/>
+      <circle cx="${cx}" cy="${cy-64}" r="3.5"
+        fill="none" stroke="${accent}" stroke-width="1.5" opacity="0.9"/>
+      <rect x="${cx-3}" y="${cy+14}" width="6" height="10" rx="2"
+        fill="${accent}" opacity="0.7"/>
+    </g>
+
+    <!-- Centre jewel -->
+    <circle cx="${cx}" cy="${cy}" r="8"   fill="#18182a" stroke="${accentD}" stroke-width="1.5"/>
+    <circle cx="${cx}" cy="${cy}" r="4.5" fill="${accent}" filter="url(#${uid}sg)"/>
+    <circle cx="${cx-1.5}" cy="${cy-1.5}" r="1.5" fill="rgba(255,255,255,0.65)"/>
+  </svg>`;
 
   if (!container.querySelector('svg')) {
-    container.innerHTML = `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"
-      style="width:${size}px;height:${size}px;overflow:visible;display:block;">
-      <defs>
-        <radialGradient id="${uid}bg" cx="45%" cy="35%" r="70%">
-          <stop offset="0%"   stop-color="#2a2a3e"/>
-          <stop offset="55%"  stop-color="#14141f"/>
-          <stop offset="100%" stop-color="#08080f"/>
-        </radialGradient>
-        <radialGradient id="${uid}bezel" cx="50%" cy="20%" r="80%">
-          <stop offset="0%"   stop-color="#4a4a5a"/>
-          <stop offset="40%"  stop-color="#2a2a38"/>
-          <stop offset="100%" stop-color="#18181f"/>
-        </radialGradient>
-        <filter id="${uid}glow" x="-50%" y="-50%" width="200%" height="200%">
-          <feGaussianBlur stdDeviation="3" result="blur"/>
-          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-        </filter>
-        <filter id="${uid}softglow" x="-30%" y="-30%" width="160%" height="160%">
-          <feGaussianBlur stdDeviation="1.5" result="blur"/>
-          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-        </filter>
-        <filter id="${uid}shadow" x="-20%" y="-20%" width="140%" height="140%">
-          <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="rgba(0,0,0,0.6)"/>
-        </filter>
-        <linearGradient id="${uid}handh" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%"   stop-color="${accent}"/>
-          <stop offset="50%"  stop-color="white" stop-opacity="0.6"/>
-          <stop offset="100%" stop-color="${accent}"/>
-        </linearGradient>
-        <linearGradient id="${uid}handm" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%"   stop-color="rgba(255,255,255,0.85)"/>
-          <stop offset="50%"  stop-color="white"/>
-          <stop offset="100%" stop-color="rgba(255,255,255,0.85)"/>
-        </linearGradient>
-      </defs>
-
-      <!-- Outer bezel (metallic ring) -->
-      <circle cx="${cx}" cy="${cy}" r="${r+8}" fill="url(#${uid}bezel)"/>
-      <circle cx="${cx}" cy="${cy}" r="${r+8}" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
-      <circle cx="${cx}" cy="${cy}" r="${r+4}" fill="none" stroke="rgba(0,0,0,0.5)" stroke-width="2"/>
-
-      <!-- Watch face -->
-      <circle cx="${cx}" cy="${cy}" r="${r}" fill="url(#${uid}bg)"/>
-
-      <!-- Subtle chapter ring -->
-      <circle cx="${cx}" cy="${cy}" r="${r-1}" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
-
-      <!-- Seconds progress arc -->
-      <circle id="${uid}arc" cx="${cx}" cy="${cy}" r="${r-6}"
-        fill="none" stroke="${accent}" stroke-width="2"
-        stroke-dasharray="${dashLen} ${circ}" stroke-linecap="round"
-        opacity="0.4" transform="rotate(-90 ${cx} ${cy})"
-        filter="url(#${uid}softglow)"/>
-
-      <!-- Minute & hour tick marks -->
-      ${minDots}
-      ${hourMarkers}
-
-      <!-- Sub-dial window (city name + digital time) -->
-      <rect x="${cx-38}" y="${cy-32}" width="76" height="28" rx="5"
-        fill="rgba(0,0,0,0.45)" stroke="rgba(255,255,255,0.08)" stroke-width="0.5"/>
-      <text x="${cx}" y="${cy-23}" text-anchor="middle" dominant-baseline="central"
-        font-family="Inter,system-ui,sans-serif" font-size="7" font-weight="800"
-        fill="rgba(255,255,255,0.55)" letter-spacing="1">${cityName.toUpperCase().slice(0,12)}</text>
-      <text id="${uid}dtime" x="${cx}" y="${cy-11}" text-anchor="middle" dominant-baseline="central"
-        font-family="'JetBrains Mono',ui-monospace,monospace" font-size="9" font-weight="400"
-        fill="${accent}" letter-spacing="0.5">${timeStr}</text>
-
-      <!-- HOME badge (if home) -->
-      ${isHome ? `<text x="${cx}" y="${cy+30}" text-anchor="middle" dominant-baseline="central"
-        font-family="Inter,system-ui,sans-serif" font-size="6" font-weight="700"
-        fill="${accent}" letter-spacing="2" opacity="0.8">◆ HOME ◆</text>` : ''}
-
-      <!-- Timezone sub-dial (bottom) -->
-      <rect x="${cx-28}" y="${cy+36}" width="56" height="14" rx="3"
-        fill="rgba(0,0,0,0.35)" stroke="rgba(255,255,255,0.06)" stroke-width="0.5"/>
-      <text x="${cx}" y="${cy+44}" text-anchor="middle" dominant-baseline="central"
-        font-family="'JetBrains Mono',ui-monospace,monospace" font-size="6.5"
-        fill="rgba(240,240,248,0.45)" letter-spacing="0.5">${shortTz.slice(0,14)}</text>
-
-      <!-- HOUR HAND — tapered baton with lume -->
-      <polygon id="${uid}hh" points="
-        ${cx - 3.5},${cy}
-        ${cx},${cy - 55}
-        ${cx + 3.5},${cy}
-        ${cx + 2},${cy + 14}
-        ${cx - 2},${cy + 14}"
-        fill="${accent}" filter="url(#${uid}shadow)"/>
-      <polygon id="${uid}hhi" points="
-        ${cx - 1.2},${cy - 4}
-        ${cx},${cy - 52}
-        ${cx + 1.2},${cy - 4}"
-        fill="rgba(255,255,255,0.5)"/>
-
-      <!-- MINUTE HAND — longer, slimmer baton -->
-      <polygon id="${uid}mh" points="
-        ${cx - 2.5},${cy}
-        ${cx},${cy - 73}
-        ${cx + 2.5},${cy}
-        ${cx + 1.5},${cy + 16}
-        ${cx - 1.5},${cy + 16}"
-        fill="rgba(230,230,245,0.95)" filter="url(#${uid}shadow)"/>
-      <polygon id="${uid}mhi" points="
-        ${cx - 0.8},${cy - 4}
-        ${cx},${cy - 70}
-        ${cx + 0.8},${cy - 4}"
-        fill="rgba(255,255,255,0.6)"/>
-
-      <!-- SECOND HAND — classic racing style -->
-      <line id="${uid}sh" x1="${cx}" y1="${cy+20}" x2="${cx}" y2="${cy-82}"
-        stroke="${accent}" stroke-width="1.2" stroke-linecap="round"
-        filter="url(#${uid}glow)"/>
-      <circle id="${uid}sc" cx="${cx}" cy="${cy-62}" r="3"
-        fill="none" stroke="${accent}" stroke-width="1.5" opacity="0.9"/>
-
-      <!-- Centre jewel -->
-      <circle cx="${cx}" cy="${cy}" r="7" fill="#1a1a28" stroke="${accent}" stroke-width="1.5"/>
-      <circle cx="${cx}" cy="${cy}" r="3.5" fill="${accent}"/>
-      <circle cx="${cx-1}" cy="${cy-1}" r="1.2" fill="rgba(255,255,255,0.7)"/>
-    </svg>`;
+    container.innerHTML = buildSVG();
     container.dataset.uid = uid;
-    container.dataset.size = size;
     return;
   }
 
-  // --- In-place update (no DOM rebuild) ---
+  // In-place updates — only touch what changes every second
   const svg = container.querySelector('svg');
-  const sid = container.dataset.uid;
-  if (!svg || !sid) { container.innerHTML = ''; updateDeskAnalog(container, z, tp, size, dateFontSize, cityFontSize, timeFontSize); return; }
+  const sid = container.dataset.uid || uid;
+  const el  = id => svg.getElementById(id);
 
-  // Update seconds arc
-  const arcEl = svg.getElementById(`${sid}arc`);
-  if (arcEl) arcEl.setAttribute('stroke-dasharray', `${dashLen} ${circ}`);
-
-  // Update digital time inside sub-dial
-  const dtimeEl = svg.getElementById(`${sid}dtime`);
-  if (dtimeEl) dtimeEl.textContent = timeStr;
-
-  // Rotate hour hand polygon — use transform
-  const hEl  = svg.getElementById(`${sid}hh`);
-  const hhiEl = svg.getElementById(`${sid}hhi`);
-  if (hEl)  hEl.setAttribute('transform',  `rotate(${hour}  ${cx} ${cy})`);
-  if (hhiEl) hhiEl.setAttribute('transform',`rotate(${hour}  ${cx} ${cy})`);
-
-  const mEl   = svg.getElementById(`${sid}mh`);
-  const mhiEl = svg.getElementById(`${sid}mhi`);
-  if (mEl)  mEl.setAttribute('transform',  `rotate(${min}  ${cx} ${cy})`);
-  if (mhiEl) mhiEl.setAttribute('transform',`rotate(${min}  ${cx} ${cy})`);
-
-  const sEl = svg.getElementById(`${sid}sh`);
-  if (sEl) sEl.setAttribute('transform', `rotate(${sec*6} ${cx} ${cy})`);
-
-  const scEl = svg.getElementById(`${sid}sc`);
-  if (scEl) scEl.setAttribute('transform', `rotate(${sec*6} ${cx} ${cy})`);
+  el(`${sid}arc`)?.setAttribute('stroke-dasharray', `${dashLen} ${circ}`);
+  el(`${sid}dt`)  && (el(`${sid}dt`).textContent = timeStr);
+  el(`${sid}hh`)?.setAttribute('transform',  `rotate(${hour} ${cx} ${cy})`);
+  el(`${sid}mh`)?.setAttribute('transform',  `rotate(${min}  ${cx} ${cy})`);
+  el(`${sid}sh2`)?.setAttribute('transform', `rotate(${sec}  ${cx} ${cy})`);
 }
 
 // Re-layout and re-render on resize
