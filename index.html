@@ -911,27 +911,18 @@ function renderDeskView() {
 
   if (needsRebuild) {
     grid.innerHTML = userZones.map((z, i) => {
-      const tzShort = z.tz.split('/').pop().replace(/_/g,' ');
-      const accent = z.home ? 'var(--accent)' : 'var(--accent2)';
-      return `<div class="desk-card${z.home ? ' home-card' : ''}" id="desk-${i}" data-tz="${z.tz}"
+      const accent = z.home ? '#c8f060' : '#6077f0';
+      return `<div id="desk-${i}" data-tz="${z.tz}"
         style="display:flex;flex-direction:column;align-items:center;justify-content:center;
-               gap:${gapSize}px;
-               padding:${Math.max(8, Math.round(cellH * 0.04))}px ${Math.max(6, Math.round(cellW * 0.04))}px;
-               border-radius:0;border:none;border-right:1px solid rgba(255,255,255,0.06);
-               border-bottom:1px solid rgba(255,255,255,0.06);position:relative;overflow:hidden;
-               background:linear-gradient(135deg,#12121a 0%,#0e0e18 100%);">
-        <div class="desk-day-badge" id="desk-day-${i}" style="position:absolute;top:8px;right:10px;font-size:${Math.max(8,dateFontSize-1)}px;font-family:var(--mono);color:${accent};letter-spacing:0.5px;text-transform:uppercase;"></div>
-        <div style="font-size:${cityFontSize}px;font-weight:800;letter-spacing:-0.3px;text-align:center;
-                    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;
-                    display:flex;align-items:center;justify-content:center;gap:6px;color:var(--text);">
-          ${z.label}
-          ${z.home ? `<span style="font-size:${Math.max(7,cityFontSize*0.55)}px;font-family:var(--mono);color:var(--accent);background:rgba(200,240,96,0.12);border:1px solid rgba(200,240,96,0.25);padding:1px 5px;border-radius:6px;">HOME</span>` : ''}
-        </div>
-        <div style="font-family:var(--mono);font-size:${Math.max(8,dateFontSize)}px;color:var(--muted);text-align:center;">${tzShort}</div>
-        <div class="desk-analog" id="desk-ana-${i}" style="width:${analogSize}px;height:${analogSize}px;flex-shrink:0;position:relative;"></div>
-        <div class="desk-time" id="desk-time-${i}" style="font-family:var(--mono);font-size:${timeFontSize}px;font-weight:300;letter-spacing:-1px;text-align:center;line-height:1;"></div>
-        <div style="font-family:var(--mono);font-size:${dateFontSize}px;color:var(--muted);text-align:center;" id="desk-date-${i}"></div>
-        <div style="font-family:var(--mono);font-size:${Math.max(8,dateFontSize-1)}px;color:var(--muted);opacity:0.6;text-align:center;" id="desk-off-${i}"></div>
+               padding:${Math.max(6, Math.round(cellH*0.04))}px ${Math.max(6, Math.round(cellW*0.03))}px;
+               border-right:1px solid rgba(255,255,255,0.05);
+               border-bottom:1px solid rgba(255,255,255,0.05);
+               position:relative;overflow:hidden;
+               background:radial-gradient(ellipse at 40% 30%, #1a1a28 0%, #0a0a10 100%);">
+        <!-- Analog watch face — contains city + time inside -->
+        <div id="desk-ana-${i}" style="width:${analogSize}px;height:${analogSize}px;flex-shrink:0;position:relative;"></div>
+        <!-- Date below watch -->
+        <div id="desk-date-${i}" style="font-family:var(--mono);font-size:${Math.max(9,dateFontSize)}px;color:rgba(240,240,248,0.5);text-align:center;margin-top:${gapSize}px;letter-spacing:0.3px;"></div>
       </div>`;
     }).join('');
   }
@@ -939,163 +930,234 @@ function renderDeskView() {
   // Update dynamic content in-place
   userZones.forEach((z, i) => {
     const tp     = getTimeParts(z.tz);
-    const timeEl = document.getElementById(`desk-time-${i}`);
-    const dateEl = document.getElementById(`desk-date-${i}`);
-    const offEl  = document.getElementById(`desk-off-${i}`);
-    const dayEl  = document.getElementById(`desk-day-${i}`);
     const anaEl  = document.getElementById(`desk-ana-${i}`);
-    if (!timeEl) return;
-
-    const timeStr = hourFormat === 12
-      ? `${tp.h12}:${tp.m}<span style="font-size:${secFontSize}px;color:var(--muted);">:${tp.s}</span><span style="font-size:${Math.round(secFontSize*0.9)}px;color:var(--muted);margin-left:3px;">${tp.ampm}</span>`
-      : `${String(tp.h).padStart(2,'0')}:${tp.m}<span style="font-size:${secFontSize}px;color:var(--muted);">:${tp.s}</span>`;
-    if (timeEl.innerHTML !== timeStr) timeEl.innerHTML = timeStr;
+    const dateEl = document.getElementById(`desk-date-${i}`);
+    const dayEl  = document.getElementById(`desk-day-${i}`);
+    if (!anaEl) return;
 
     const ds = formatDate(z.tz);
-    if (dateEl.textContent !== ds) dateEl.textContent = ds;
-    const off = getOffset(z.tz);
-    if (offEl.textContent !== off) offEl.textContent = off;
+    if (dateEl && dateEl.textContent !== ds) dateEl.textContent = ds;
     const dl = getDayLabel(z.tz);
     if (dayEl && dayEl.textContent !== dl) dayEl.textContent = dl;
 
-    updateDeskAnalog(anaEl, z.tz, z.home);
+    updateDeskAnalog(anaEl, z, tp, analogSize, dateFontSize, cityFontSize, timeFontSize);
   });
 }
 
-function updateDeskAnalog(container, tz, isHome) {
-  const accent  = isHome ? '#c8f060' : '#6077f0';
-  const accentD = isHome ? '#8aad20' : '#3a55c8'; // darker shade for depth
-  const { hour, min, sec } = getClockAngles(tz);
-  const cx = 60, cy = 60, r = 52;
+function updateDeskAnalog(container, z, tp, size, dateFontSize, cityFontSize, timeFontSize) {
+  const isHome = z.home;
+  const accent  = isHome ? '#c8f060' : '#7888ff';
+  const accentG = isHome ? '#a8d040' : '#5566dd';
+  const { hour, min, sec } = getClockAngles(z.tz);
+  const cx = 100, cy = 100, r = 88;
   const rad = a => a * Math.PI / 180;
-  const pt  = (a, len) => [cx + Math.sin(rad(a)) * len, cy - Math.cos(rad(a)) * len];
-  const [hx,hy] = pt(hour, 30);
-  const [mx,my] = pt(min,  42);
-  const [sx,sy] = pt(sec,  48);
-  const circ    = 2 * Math.PI * r;
-  const dashLen = circ * (sec / 60);
+  const pt  = (a, len) => [+(cx + Math.sin(rad(a)) * len).toFixed(2), +(cy - Math.cos(rad(a)) * len).toFixed(2)];
 
-  // Hour markers — numbers at cardinal positions, dots elsewhere
-  const markers = Array.from({length: 12}, (_, i) => {
+  const [hx,hy] = pt(hour, 50);
+  const [mx,my] = pt(min,  70);
+  const [sx,sy] = pt(sec,  80);
+  const tailAngle = sec * 6 + 180;
+  const [tx,ty]   = pt(tailAngle, 20);
+  const circ    = 2 * Math.PI * r;
+  const dashLen = +(circ * sec / 60).toFixed(2);
+
+  // Luxury hour markers
+  const hourMarkers = Array.from({length:12}, (_,i) => {
     const a   = i * 30;
     const num = i === 0 ? 12 : i;
-    const isCardinal = i % 3 === 0;
-    if (isCardinal) {
-      const [tx, ty] = pt(a, r - 14);
-      return `<text x="${tx}" y="${ty}" text-anchor="middle" dominant-baseline="central"
-        font-family="Inter,system-ui,sans-serif" font-size="9" font-weight="700"
-        fill="rgba(240,240,248,0.7)">${num}</text>`;
+    const isQuarter = i % 3 === 0;
+    if (isQuarter) {
+      // Wide batons at 12,3,6,9
+      const [ax,ay] = pt(a, r - 3);
+      const [bx,by] = pt(a, r - 16);
+      const perp = [-Math.cos(rad(a)) * 2.5, -Math.sin(rad(a)) * 2.5];
+      return `<line x1="${ax}" y1="${ay}" x2="${bx}" y2="${by}"
+        stroke="${accentG}" stroke-width="5" stroke-linecap="round" opacity="0.9"/>
+      <line x1="${ax}" y1="${ay}" x2="${bx}" y2="${by}"
+        stroke="white" stroke-width="1.5" stroke-linecap="round" opacity="0.4"/>`;
     } else {
-      const [x1,y1] = pt(a, r - 8);
-      const [x2,y2] = pt(a, r - 4);
-      return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"
-        stroke="rgba(255,255,255,0.25)" stroke-width="1.5" stroke-linecap="round"/>`;
+      // Thin hour markers
+      const [ax,ay] = pt(a, r - 3);
+      const [bx,by] = pt(a, r - 10);
+      return `<line x1="${ax}" y1="${ay}" x2="${bx}" y2="${by}"
+        stroke="rgba(255,255,255,0.4)" stroke-width="2" stroke-linecap="round"/>`;
     }
   }).join('');
 
-  // Minute tick marks
-  const minTicks = Array.from({length: 60}, (_, i) => {
-    if (i % 5 === 0) return ''; // skip where hour markers are
+  // Minute dots (60 total)
+  const minDots = Array.from({length:60}, (_,i) => {
+    if (i % 5 === 0) return '';
     const a = i * 6;
-    const [x1,y1] = pt(a, r - 5);
-    const [x2,y2] = pt(a, r - 3);
-    return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"
-      stroke="rgba(255,255,255,0.12)" stroke-width="1" stroke-linecap="round"/>`;
+    const [ax,ay] = pt(a, r - 3);
+    const [bx,by] = pt(a, r - 7);
+    return `<line x1="${ax}" y1="${ay}" x2="${bx}" y2="${by}"
+      stroke="rgba(255,255,255,0.18)" stroke-width="1" stroke-linecap="round"/>`;
   }).join('');
 
-  const uid = `dc_${container.id || Math.random().toString(36).slice(2)}`;
+  // Digital time display (inside dial, upper area)
+  const timeStr = tp.h12 !== undefined
+    ? `${tp.h12}:${tp.m} ${tp.ampm}`
+    : `${String(tp.h).padStart(2,'0')}:${tp.m}`;
+
+  const uid = `dw_${i}_${z.tz.replace(/\W/g,'_')}`;
+  const shortTz = z.tz.split('/').pop().replace(/_/g,' ');
+  const cityName = z.label;
 
   if (!container.querySelector('svg')) {
-    container.innerHTML = `<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;overflow:visible;">
+    container.innerHTML = `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"
+      style="width:${size}px;height:${size}px;overflow:visible;display:block;">
       <defs>
-        <!-- Bezel gradient -->
-        <radialGradient id="${uid}_bg" cx="40%" cy="35%">
-          <stop offset="0%"   stop-color="#232330"/>
-          <stop offset="100%" stop-color="#0d0d14"/>
+        <radialGradient id="${uid}bg" cx="45%" cy="35%" r="70%">
+          <stop offset="0%"   stop-color="#2a2a3e"/>
+          <stop offset="55%"  stop-color="#14141f"/>
+          <stop offset="100%" stop-color="#08080f"/>
         </radialGradient>
-        <!-- Glow filter for accent elements -->
-        <filter id="${uid}_glow" x="-40%" y="-40%" width="180%" height="180%">
-          <feGaussianBlur stdDeviation="2.5" result="blur"/>
+        <radialGradient id="${uid}bezel" cx="50%" cy="20%" r="80%">
+          <stop offset="0%"   stop-color="#4a4a5a"/>
+          <stop offset="40%"  stop-color="#2a2a38"/>
+          <stop offset="100%" stop-color="#18181f"/>
+        </radialGradient>
+        <filter id="${uid}glow" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="3" result="blur"/>
           <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
         </filter>
-        <!-- Subtle inner glow on ring -->
-        <filter id="${uid}_ringglow" x="-10%" y="-10%" width="120%" height="120%">
+        <filter id="${uid}softglow" x="-30%" y="-30%" width="160%" height="160%">
           <feGaussianBlur stdDeviation="1.5" result="blur"/>
           <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
         </filter>
+        <filter id="${uid}shadow" x="-20%" y="-20%" width="140%" height="140%">
+          <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="rgba(0,0,0,0.6)"/>
+        </filter>
+        <linearGradient id="${uid}handh" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%"   stop-color="${accent}"/>
+          <stop offset="50%"  stop-color="white" stop-opacity="0.6"/>
+          <stop offset="100%" stop-color="${accent}"/>
+        </linearGradient>
+        <linearGradient id="${uid}handm" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%"   stop-color="rgba(255,255,255,0.85)"/>
+          <stop offset="50%"  stop-color="white"/>
+          <stop offset="100%" stop-color="rgba(255,255,255,0.85)"/>
+        </linearGradient>
       </defs>
 
-      <!-- Outer bezel ring -->
-      <circle cx="${cx}" cy="${cy}" r="${r+5}" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="1.5"/>
+      <!-- Outer bezel (metallic ring) -->
+      <circle cx="${cx}" cy="${cy}" r="${r+8}" fill="url(#${uid}bezel)"/>
+      <circle cx="${cx}" cy="${cy}" r="${r+8}" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
+      <circle cx="${cx}" cy="${cy}" r="${r+4}" fill="none" stroke="rgba(0,0,0,0.5)" stroke-width="2"/>
 
-      <!-- Clock face -->
-      <circle cx="${cx}" cy="${cy}" r="${r}" fill="url(#${uid}_bg)"/>
+      <!-- Watch face -->
+      <circle cx="${cx}" cy="${cy}" r="${r}" fill="url(#${uid}bg)"/>
 
-      <!-- Subtle face texture ring -->
-      <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="8"/>
+      <!-- Subtle chapter ring -->
+      <circle cx="${cx}" cy="${cy}" r="${r-1}" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
 
-      <!-- Accent arc (seconds progress) -->
-      <circle id="${uid}_arc" cx="${cx}" cy="${cy}" r="${r}"
-        fill="none" stroke="${accent}" stroke-width="2.5"
+      <!-- Seconds progress arc -->
+      <circle id="${uid}arc" cx="${cx}" cy="${cy}" r="${r-6}"
+        fill="none" stroke="${accent}" stroke-width="2"
         stroke-dasharray="${dashLen} ${circ}" stroke-linecap="round"
-        opacity="0.35" transform="rotate(-90 ${cx} ${cy})"
-        filter="url(#${uid}_ringglow)"/>
+        opacity="0.4" transform="rotate(-90 ${cx} ${cy})"
+        filter="url(#${uid}softglow)"/>
 
-      <!-- Tick marks & numbers -->
-      ${minTicks}
-      ${markers}
+      <!-- Minute & hour tick marks -->
+      ${minDots}
+      ${hourMarkers}
 
-      <!-- Hour hand — thick, rounded, glowing -->
-      <line id="${uid}_hh" x1="${cx}" y1="${cy}" x2="${hx}" y2="${hy}"
-        stroke="${accent}" stroke-width="5" stroke-linecap="round"
-        filter="url(#${uid}_glow)"/>
-      <!-- Hour hand inner lighter line for 3D feel -->
-      <line id="${uid}_hhi" x1="${cx}" y1="${cy}" x2="${hx}" y2="${hy}"
-        stroke="rgba(255,255,255,0.35)" stroke-width="1.5" stroke-linecap="round"/>
+      <!-- Sub-dial window (city name + digital time) -->
+      <rect x="${cx-38}" y="${cy-32}" width="76" height="28" rx="5"
+        fill="rgba(0,0,0,0.45)" stroke="rgba(255,255,255,0.08)" stroke-width="0.5"/>
+      <text x="${cx}" y="${cy-23}" text-anchor="middle" dominant-baseline="central"
+        font-family="Inter,system-ui,sans-serif" font-size="7" font-weight="800"
+        fill="rgba(255,255,255,0.55)" letter-spacing="1">${cityName.toUpperCase().slice(0,12)}</text>
+      <text id="${uid}dtime" x="${cx}" y="${cy-11}" text-anchor="middle" dominant-baseline="central"
+        font-family="'JetBrains Mono',ui-monospace,monospace" font-size="9" font-weight="400"
+        fill="${accent}" letter-spacing="0.5">${timeStr}</text>
 
-      <!-- Minute hand -->
-      <line id="${uid}_mh" x1="${cx}" y1="${cy}" x2="${mx}" y2="${my}"
-        stroke="rgba(240,240,248,0.95)" stroke-width="3" stroke-linecap="round"/>
-      <line id="${uid}_mhi" x1="${cx}" y1="${cy}" x2="${mx}" y2="${my}"
-        stroke="rgba(255,255,255,0.3)" stroke-width="1" stroke-linecap="round"/>
+      <!-- HOME badge (if home) -->
+      ${isHome ? `<text x="${cx}" y="${cy+30}" text-anchor="middle" dominant-baseline="central"
+        font-family="Inter,system-ui,sans-serif" font-size="6" font-weight="700"
+        fill="${accent}" letter-spacing="2" opacity="0.8">◆ HOME ◆</text>` : ''}
 
-      <!-- Second hand — thin, accent colour -->
-      <line id="${uid}_sh" x1="${cx}" y1="${cy}" x2="${sx}" y2="${sy}"
+      <!-- Timezone sub-dial (bottom) -->
+      <rect x="${cx-28}" y="${cy+36}" width="56" height="14" rx="3"
+        fill="rgba(0,0,0,0.35)" stroke="rgba(255,255,255,0.06)" stroke-width="0.5"/>
+      <text x="${cx}" y="${cy+44}" text-anchor="middle" dominant-baseline="central"
+        font-family="'JetBrains Mono',ui-monospace,monospace" font-size="6.5"
+        fill="rgba(240,240,248,0.45)" letter-spacing="0.5">${shortTz.slice(0,14)}</text>
+
+      <!-- HOUR HAND — tapered baton with lume -->
+      <polygon id="${uid}hh" points="
+        ${cx - 3.5},${cy}
+        ${cx},${cy - 55}
+        ${cx + 3.5},${cy}
+        ${cx + 2},${cy + 14}
+        ${cx - 2},${cy + 14}"
+        fill="${accent}" filter="url(#${uid}shadow)"/>
+      <polygon id="${uid}hhi" points="
+        ${cx - 1.2},${cy - 4}
+        ${cx},${cy - 52}
+        ${cx + 1.2},${cy - 4}"
+        fill="rgba(255,255,255,0.5)"/>
+
+      <!-- MINUTE HAND — longer, slimmer baton -->
+      <polygon id="${uid}mh" points="
+        ${cx - 2.5},${cy}
+        ${cx},${cy - 73}
+        ${cx + 2.5},${cy}
+        ${cx + 1.5},${cy + 16}
+        ${cx - 1.5},${cy + 16}"
+        fill="rgba(230,230,245,0.95)" filter="url(#${uid}shadow)"/>
+      <polygon id="${uid}mhi" points="
+        ${cx - 0.8},${cy - 4}
+        ${cx},${cy - 70}
+        ${cx + 0.8},${cy - 4}"
+        fill="rgba(255,255,255,0.6)"/>
+
+      <!-- SECOND HAND — classic racing style -->
+      <line id="${uid}sh" x1="${cx}" y1="${cy+20}" x2="${cx}" y2="${cy-82}"
         stroke="${accent}" stroke-width="1.2" stroke-linecap="round"
-        opacity="0.9" filter="url(#${uid}_glow)"/>
-      <!-- Second hand tail (counter-balance) -->
-      <line id="${uid}_st" x1="${cx}" y1="${cy}"
-        x2="${cx + Math.sin(rad(sec*6+180))*10}" y2="${cy - Math.cos(rad(sec*6+180))*10}"
-        stroke="${accent}" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+        filter="url(#${uid}glow)"/>
+      <circle id="${uid}sc" cx="${cx}" cy="${cy-62}" r="3"
+        fill="none" stroke="${accent}" stroke-width="1.5" opacity="0.9"/>
 
-      <!-- Centre cap -->
-      <circle cx="${cx}" cy="${cy}" r="5.5" fill="${accent}" filter="url(#${uid}_glow)"/>
-      <circle cx="${cx}" cy="${cy}" r="3"   fill="#0d0d14"/>
-      <circle cx="${cx}" cy="${cy}" r="1.2" fill="${accent}"/>
+      <!-- Centre jewel -->
+      <circle cx="${cx}" cy="${cy}" r="7" fill="#1a1a28" stroke="${accent}" stroke-width="1.5"/>
+      <circle cx="${cx}" cy="${cy}" r="3.5" fill="${accent}"/>
+      <circle cx="${cx-1}" cy="${cy-1}" r="1.2" fill="rgba(255,255,255,0.7)"/>
     </svg>`;
     container.dataset.uid = uid;
+    container.dataset.size = size;
     return;
   }
 
-  // Update hand positions in-place
+  // --- In-place update (no DOM rebuild) ---
   const svg = container.querySelector('svg');
-  const sid = container.dataset.uid || uid;
-  const get = id => svg.getElementById(id);
-  const setA = (el, attrs) => { if (el) Object.entries(attrs).forEach(([k,v]) => el.setAttribute(k,v)); };
+  const sid = container.dataset.uid;
+  if (!svg || !sid) { container.innerHTML = ''; updateDeskAnalog(container, z, tp, size, dateFontSize, cityFontSize, timeFontSize); return; }
 
-  setA(get(`${sid}_arc`), { 'stroke-dasharray': `${dashLen} ${circ}` });
-  setA(get(`${sid}_hh`),  { x2: hx, y2: hy });
-  setA(get(`${sid}_hhi`), { x2: hx, y2: hy });
-  setA(get(`${sid}_mh`),  { x2: mx, y2: my });
-  setA(get(`${sid}_mhi`), { x2: mx, y2: my });
-  setA(get(`${sid}_sh`),  { x2: sx, y2: sy });
-  // Update second hand tail
-  const tail = get(`${sid}_st`);
-  if (tail) {
-    const tailAngle = sec * 6 + 180;
-    const [tx, ty] = [cx + Math.sin(rad(tailAngle))*10, cy - Math.cos(rad(tailAngle))*10];
-    setA(tail, { x2: tx, y2: ty });
-  }
+  // Update seconds arc
+  const arcEl = svg.getElementById(`${sid}arc`);
+  if (arcEl) arcEl.setAttribute('stroke-dasharray', `${dashLen} ${circ}`);
+
+  // Update digital time inside sub-dial
+  const dtimeEl = svg.getElementById(`${sid}dtime`);
+  if (dtimeEl) dtimeEl.textContent = timeStr;
+
+  // Rotate hour hand polygon — use transform
+  const hEl  = svg.getElementById(`${sid}hh`);
+  const hhiEl = svg.getElementById(`${sid}hhi`);
+  if (hEl)  hEl.setAttribute('transform',  `rotate(${hour}  ${cx} ${cy})`);
+  if (hhiEl) hhiEl.setAttribute('transform',`rotate(${hour}  ${cx} ${cy})`);
+
+  const mEl   = svg.getElementById(`${sid}mh`);
+  const mhiEl = svg.getElementById(`${sid}mhi`);
+  if (mEl)  mEl.setAttribute('transform',  `rotate(${min}  ${cx} ${cy})`);
+  if (mhiEl) mhiEl.setAttribute('transform',`rotate(${min}  ${cx} ${cy})`);
+
+  const sEl = svg.getElementById(`${sid}sh`);
+  if (sEl) sEl.setAttribute('transform', `rotate(${sec*6} ${cx} ${cy})`);
+
+  const scEl = svg.getElementById(`${sid}sc`);
+  if (scEl) scEl.setAttribute('transform', `rotate(${sec*6} ${cx} ${cy})`);
 }
 
 // Re-layout and re-render on resize
