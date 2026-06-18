@@ -38,6 +38,8 @@
 <meta property="og:description" content="Live world clocks, alarms, and time zone converter.">
 <meta property="og:type" content="website">
 
+<!-- Supabase SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <!-- Fonts -->
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -604,14 +606,33 @@
   <div class="modal">
     <div class="modal-icon">🚀</div>
     <h2>ZoneClock <span>Premium</span></h2>
-    <p>Unlock ultimate precision monitoring with seamless tracking across thousands of locations without limits.</p>
+    <p>Unlock the full experience — unlimited clocks, desk view, unlimited alarms, and sync across all your devices.</p>
     <ul class="modal-features">
-      <li><div class="feat-check">✓</div> Track infinite simultaneous cities</li>
-      <li><div class="feat-check">✓</div> Advanced high-integrity notification rules</li>
-      <li><div class="feat-check">✓</div> Absolute standalone persistent offline cache</li>
+      <li><div class="feat-check">✓</div> Unlimited time zones</li>
+      <li><div class="feat-check">✓</div> Unlimited alarms across any timezone</li>
+      <li><div class="feat-check">✓</div> Full-screen Desk View with luxury watch faces</li>
+      <li><div class="feat-check">✓</div> Sync premium status across devices</li>
+      <li><div class="feat-check">✓</div> Works offline — full PWA support</li>
     </ul>
-    <div class="modal-price"><span class="amount">$2.99</span><span class="period">/ lifetime</span></div>
-    <button class="modal-cta" onclick="upgradeToPremium()">Unlock Lifetime Access</button>
+    <div class="modal-price"><span class="amount">$5</span><span class="period">/ month</span></div>
+
+    <!-- Email input for Stripe checkout -->
+    <div id="checkoutEmailWrap" style="margin-bottom:14px;">
+      <input id="checkoutEmail" type="email" placeholder="Your email address"
+        style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:10px;
+               color:var(--text);font-family:var(--font);font-size:14px;padding:12px 16px;
+               outline:none;transition:border-color 0.2s;"
+        onfocus="this.style.borderColor='rgba(255,255,255,0.2)'"
+        onblur="this.style.borderColor='var(--border)'"
+        onkeydown="if(event.key==='Enter')startCheckout()"/>
+    </div>
+    <div id="checkoutError" style="color:var(--danger);font-size:12px;margin-bottom:10px;display:none;"></div>
+    <button class="modal-cta" id="checkoutBtn" onclick="startCheckout()">
+      🔒 Subscribe — $5/month
+    </button>
+    <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:10px;">
+      Secure payment via Stripe · Cancel anytime
+    </div>
     <span class="modal-close" onclick="closePremiumModal()">Maybe Later</span>
   </div>
 </div>
@@ -889,223 +910,314 @@ function renderDeskView() {
       : `${String(tp.h).padStart(2,'0')}:${tp.m}:${tp.s} — ${home.label}`;
   }
 
-  // Compute cell dimensions from grid layout (set by layoutDeskGrid)
-  const n = userZones.length;
+  const n     = userZones.length;
   const cols  = parseInt(grid.dataset.cols)  || 1;
   const rows  = parseInt(grid.dataset.rows)  || n;
-  const cellW = parseInt(grid.dataset.cellW) || Math.floor(window.innerWidth  / cols);
-  const barH  = document.getElementById('deskViewBar')?.getBoundingClientRect().height || 60;
+  const cellW = parseInt(grid.dataset.cellW) || Math.floor(window.innerWidth / cols);
+  const barH  = document.getElementById('deskViewBar')?.getBoundingClientRect().height || 56;
   const availH = window.innerHeight - barH;
   const cellH = parseInt(grid.dataset.cellH) || Math.floor(availH / rows);
 
-  // Scale everything to fill the cell
-  const analogSize   = Math.round(Math.min(cellW, cellH) * 0.44);
-  const cityFontSize = Math.max(11, Math.min(24, Math.round(cellW * 0.092)));
-  const timeFontSize = Math.max(14, Math.min(52, Math.round(cellW * 0.13)));
-  const secFontSize  = Math.round(timeFontSize * 0.55);
-  const dateFontSize = Math.max(9,  Math.min(14, Math.round(cellW * 0.046)));
-  const gapSize      = Math.max(3,  Math.round(cellH * 0.022));
+  // Typography scale — fluid sizing based on cell dimensions
+  const cityFS   = Math.max(12, Math.min(26, Math.round(Math.min(cellW, cellH) * 0.075)));
+  const timeFS   = Math.max(14, Math.min(36, Math.round(cellW * 0.11)));
+  const detailFS = Math.max(9,  Math.min(13, Math.round(cellW * 0.042)));
+  const gap      = Math.max(4,  Math.round(cellH * 0.02));
+
+  // Analog clock fills as much space as possible
+  // Reserve: city row + gap + time row + gap + 2×detail rows + paddings
+  const reservedH = cityFS + 4 + gap + timeFS + 4 + gap + detailFS * 2 + 6 + gap * 2 + 24;
+  const analogSize = Math.max(60, Math.round(Math.min(
+    cellW * 0.78,
+    (cellH - reservedH)
+  )));
 
   const needsRebuild = grid.children.length !== n ||
-    userZones.some((z, i) => { const c = document.getElementById(`desk-${i}`); return !c || c.dataset.tz !== z.tz; });
+    userZones.some((z, i) => {
+      const c = document.getElementById(`dcard-${i}`);
+      return !c || c.dataset.tz !== z.tz;
+    });
 
   if (needsRebuild) {
     grid.innerHTML = userZones.map((z, i) => {
-      const accent = z.home ? '#c8f060' : '#6077f0';
-      return `<div id="desk-${i}" data-tz="${z.tz}"
-        style="display:flex;flex-direction:column;align-items:center;justify-content:center;
-               padding:${Math.max(6, Math.round(cellH*0.04))}px ${Math.max(6, Math.round(cellW*0.03))}px;
-               border-right:1px solid rgba(255,255,255,0.05);
-               border-bottom:1px solid rgba(255,255,255,0.05);
-               position:relative;overflow:hidden;
-               background:radial-gradient(ellipse at 40% 30%, #1a1a28 0%, #0a0a10 100%);">
-        <!-- Analog watch face — contains city + time inside -->
-        <div id="desk-ana-${i}" style="width:${analogSize}px;height:${analogSize}px;flex-shrink:0;position:relative;"></div>
-        <!-- Date below watch -->
-        <div id="desk-date-${i}" style="font-family:var(--mono);font-size:${Math.max(9,dateFontSize)}px;color:rgba(240,240,248,0.5);text-align:center;margin-top:${gapSize}px;letter-spacing:0.3px;"></div>
+      const accent = z.home ? '#c8f060' : '#8899ff';
+      const pad    = Math.max(8, Math.round(cellH * 0.035));
+      return `<div id="dcard-${i}" data-tz="${z.tz}"
+        style="display:flex;flex-direction:column;align-items:center;justify-content:space-between;
+               padding:${pad}px ${Math.max(8, Math.round(cellW*0.04))}px ${pad}px;
+               overflow:hidden;position:relative;
+               border-right:1px solid rgba(255,255,255,0.04);
+               border-bottom:1px solid rgba(255,255,255,0.04);
+               background:radial-gradient(ellipse at 50% 15%, #1e1e30 0%, #09090f 100%);">
+
+        <!-- ① CITY NAME — always visible at top -->
+        <div style="width:100%;text-align:center;flex-shrink:0;">
+          <div style="display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:nowrap;">
+            <span style="font-size:${cityFS}px;font-weight:800;color:#fff;letter-spacing:-0.3px;
+                         white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+                         max-width:${cellW - 60}px;display:block;">${z.label}</span>
+            ${z.home ? `<span style="font-size:${Math.max(8,Math.round(cityFS*0.5))}px;
+              font-family:var(--mono);color:${accent};
+              background:rgba(200,240,96,0.1);border:1px solid rgba(200,240,96,0.25);
+              padding:1px 6px;border-radius:5px;white-space:nowrap;flex-shrink:0;">HOME</span>` : ''}
+          </div>
+        </div>
+
+        <!-- ② WATCH FACE — centre, fills remaining space -->
+        <div id="dface-${i}" style="flex-shrink:0;display:flex;align-items:center;justify-content:center;"></div>
+
+        <!-- ③ DETAILS BELOW — time + date + offset -->
+        <div style="width:100%;text-align:center;flex-shrink:0;display:flex;flex-direction:column;gap:${Math.max(2,gap-2)}px;">
+          <div id="dtime-${i}" style="font-family:var(--mono);font-size:${timeFS}px;font-weight:400;
+               color:${accent};letter-spacing:0px;line-height:1;"></div>
+          <div id="ddate-${i}" style="font-family:var(--mono);font-size:${detailFS}px;
+               color:rgba(240,240,248,0.42);letter-spacing:0.3px;"></div>
+          <div id="doff-${i}"  style="font-family:var(--mono);font-size:${Math.max(8,detailFS-1)}px;
+               color:rgba(240,240,248,0.25);letter-spacing:0.3px;"></div>
+        </div>
+
       </div>`;
     }).join('');
   }
 
   // Update dynamic content in-place
   userZones.forEach((z, i) => {
-    const tp     = getTimeParts(z.tz);
-    const anaEl  = document.getElementById(`desk-ana-${i}`);
-    const dateEl = document.getElementById(`desk-date-${i}`);
-    const dayEl  = document.getElementById(`desk-day-${i}`);
-    if (!anaEl) return;
+    const tp      = getTimeParts(z.tz);
+    const faceEl  = document.getElementById(`dface-${i}`);
+    const timeEl  = document.getElementById(`dtime-${i}`);
+    const dateEl  = document.getElementById(`ddate-${i}`);
+    const offEl   = document.getElementById(`doff-${i}`);
+    if (!faceEl) return;
+
+    // Ensure face container has correct size
+    faceEl.style.width  = analogSize + 'px';
+    faceEl.style.height = analogSize + 'px';
+
+    const timeStr = hourFormat === 12
+      ? `${tp.h12}:${tp.m}:${tp.s} ${tp.ampm}`
+      : `${String(tp.h).padStart(2,'0')}:${tp.m}:${tp.s}`;
+    if (timeEl && timeEl.textContent !== timeStr) timeEl.textContent = timeStr;
 
     const ds = formatDate(z.tz);
     if (dateEl && dateEl.textContent !== ds) dateEl.textContent = ds;
-    const dl = getDayLabel(z.tz);
-    if (dayEl && dayEl.textContent !== dl) dayEl.textContent = dl;
 
-    updateDeskAnalog(anaEl, z, tp, analogSize, dateFontSize, cityFontSize, timeFontSize);
+    const off = getOffset(z.tz);
+    if (offEl && offEl.textContent !== off) offEl.textContent = off;
+
+    renderLuxuryWatch(faceEl, z, tp, analogSize);
   });
 }
 
-function updateDeskAnalog(container, z, tp, size, dateFontSize, cityFontSize, timeFontSize) {
-  const isHome  = z.home;
-  const accent  = isHome ? '#c8f060' : '#7888ff';
-  const accentD = isHome ? '#a8d040' : '#5566dd';
+/* ═══════════════════════════════════════════════════════
+   LUXURY WATCH FACE — Render-once, update-in-place
+   viewBox: 200×200  cx/cy: 100,100  bezel r: 96
+═══════════════════════════════════════════════════════ */
+function renderLuxuryWatch(container, z, tp, size) {
+  const isHome = z.home;
+  const A  = isHome ? '#c8f060' : '#8899ff';  // accent
+  const AD = isHome ? '#8aad30' : '#5566cc';  // accent dark
+  const AO = isHome ? '0.9'     : '0.85';     // accent opacity
 
-  // Get angles — hour/min/sec are already in degrees from getClockAngles
   const { hour, min, sec } = getClockAngles(z.tz);
+  const CX = 100, CY = 100;
+  const R  = 88;   // face radius
+  const RB = 96;   // bezel radius
+  const circumference = +(2 * Math.PI * (R - 8)).toFixed(2);
+  const secDash = +(circumference * parseInt(tp.s) / 60).toFixed(2);
 
-  const cx = 100, cy = 100, r = 86;
-  const circ    = 2 * Math.PI * r;
-  const dashLen = +(circ * parseInt(tp.s) / 60).toFixed(2);
+  // Unique ID prefix per container
+  const uid = 'lw' + container.id.replace(/\W/g, '');
 
-  // Digital time string
-  const timeStr = hourFormat === 12 ? `${tp.h12}:${tp.m} ${tp.ampm}` : `${String(tp.h).padStart(2,'0')}:${tp.m}`;
-  const cityName = z.label.toUpperCase().slice(0, 12);
-  const shortTz  = z.tz.split('/').pop().replace(/_/g,' ').slice(0, 14);
-  const uid      = 'w' + container.id.replace(/\W/g,'');
-
-  // Hour tick markers
-  const markers = Array.from({length: 12}, (_, i) => {
-    const a    = i * 30;
-    const isQ  = i % 3 === 0;
-    const outer = r - 2;
-    const inner = isQ ? r - 16 : r - 9;
-    const sw    = isQ ? 4.5 : 2;
-    const col   = isQ ? accentD : 'rgba(255,255,255,0.35)';
-    const rad   = a * Math.PI / 180;
-    const x1 = +(cx + Math.sin(rad) * outer).toFixed(2);
-    const y1 = +(cy - Math.cos(rad) * outer).toFixed(2);
-    const x2 = +(cx + Math.sin(rad) * inner).toFixed(2);
-    const y2 = +(cy - Math.cos(rad) * inner).toFixed(2);
-    return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${col}" stroke-width="${sw}" stroke-linecap="round"/>`;
+  // --- Hour markers (baton style) ---
+  const hourMarkers = Array.from({length: 12}, (_, i) => {
+    const deg = i * 30;
+    const rad = deg * Math.PI / 180;
+    const isCardinal = i % 3 === 0;
+    const r1  = R - 3, r2 = isCardinal ? R - 17 : R - 10;
+    const sw  = isCardinal ? 5 : 2;
+    const col = isCardinal ? AD : 'rgba(255,255,255,0.3)';
+    const x1 = +(CX + Math.sin(rad)*r1).toFixed(2), y1 = +(CY - Math.cos(rad)*r1).toFixed(2);
+    const x2 = +(CX + Math.sin(rad)*r2).toFixed(2), y2 = +(CY - Math.cos(rad)*r2).toFixed(2);
+    const shine1x = +(CX + Math.sin(rad)*(r1-1)).toFixed(2), shine1y = +(CY - Math.cos(rad)*(r1-1)).toFixed(2);
+    const shine2x = +(CX + Math.sin(rad)*(r2+2)).toFixed(2), shine2y = +(CY - Math.cos(rad)*(r2+2)).toFixed(2);
+    return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${col}" stroke-width="${sw}" stroke-linecap="round"/>
+      ${isCardinal ? `<line x1="${shine1x}" y1="${shine1y}" x2="${shine2x}" y2="${shine2y}" stroke="rgba(255,255,255,0.35)" stroke-width="1.2" stroke-linecap="round"/>` : ''}`;
   }).join('');
 
-  // Minute dots
+  // --- Minute dots ---
   const minDots = Array.from({length: 60}, (_, i) => {
     if (i % 5 === 0) return '';
-    const a   = i * 6 * Math.PI / 180;
-    const x1  = +(cx + Math.sin(a) * (r-2)).toFixed(2);
-    const y1  = +(cy - Math.cos(a) * (r-2)).toFixed(2);
-    const x2  = +(cx + Math.sin(a) * (r-6)).toFixed(2);
-    const y2  = +(cy - Math.cos(a) * (r-6)).toFixed(2);
-    return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="rgba(255,255,255,0.15)" stroke-width="1" stroke-linecap="round"/>`;
+    const rad = i * 6 * Math.PI / 180;
+    const x1 = +(CX + Math.sin(rad)*(R-3)).toFixed(2),  y1 = +(CY - Math.cos(rad)*(R-3)).toFixed(2);
+    const x2 = +(CX + Math.sin(rad)*(R-7)).toFixed(2),  y2 = +(CY - Math.cos(rad)*(R-7)).toFixed(2);
+    return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="rgba(255,255,255,0.14)" stroke-width="1" stroke-linecap="round"/>`;
   }).join('');
 
-  // --- Build SVG from scratch always, update in-place if exists ---
-  const buildSVG = () => `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"
-    style="width:${size}px;height:${size}px;display:block;">
-    <defs>
-      <radialGradient id="${uid}bg" cx="45%" cy="38%" r="68%">
-        <stop offset="0%"  stop-color="#252535"/>
-        <stop offset="60%" stop-color="#12121c"/>
-        <stop offset="100%" stop-color="#07070e"/>
-      </radialGradient>
-      <radialGradient id="${uid}bz" cx="50%" cy="20%" r="75%">
-        <stop offset="0%"  stop-color="#4e4e60"/>
-        <stop offset="50%" stop-color="#28283a"/>
-        <stop offset="100%" stop-color="#14141e"/>
-      </radialGradient>
-      <filter id="${uid}gl" x="-60%" y="-60%" width="220%" height="220%">
-        <feGaussianBlur stdDeviation="4" result="b"/>
-        <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
-      </filter>
-      <filter id="${uid}sg" x="-30%" y="-30%" width="160%" height="160%">
-        <feGaussianBlur stdDeviation="2" result="b"/>
-        <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
-      </filter>
-      <filter id="${uid}sh" x="-20%" y="-20%" width="140%" height="140%">
-        <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.7"/>
-      </filter>
-    </defs>
-
-    <!-- Bezel -->
-    <circle cx="${cx}" cy="${cy}" r="${r+10}" fill="url(#${uid}bz)"/>
-    <circle cx="${cx}" cy="${cy}" r="${r+10}" fill="none" stroke="rgba(255,255,255,0.10)" stroke-width="0.8"/>
-    <circle cx="${cx}" cy="${cy}" r="${r+5}"  fill="none" stroke="rgba(0,0,0,0.6)"        stroke-width="2"/>
-
-    <!-- Face -->
-    <circle cx="${cx}" cy="${cy}" r="${r}" fill="url(#${uid}bg)"/>
-    <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
-
-    <!-- Seconds ring -->
-    <circle id="${uid}arc" cx="${cx}" cy="${cy}" r="${r-7}"
-      fill="none" stroke="${accent}" stroke-width="2.5"
-      stroke-dasharray="${dashLen} ${circ}" stroke-linecap="round"
-      opacity="0.45" transform="rotate(-90 ${cx} ${cy})"
-      filter="url(#${uid}sg)"/>
-
-    <!-- Ticks -->
-    ${minDots}
-    ${markers}
-
-    <!-- City name sub-dial -->
-    <rect x="62" y="56" width="76" height="26" rx="4"
-      fill="rgba(0,0,0,0.5)" stroke="rgba(255,255,255,0.07)" stroke-width="0.5"/>
-    <text x="${cx}" y="64" text-anchor="middle" dominant-baseline="central"
-      font-family="Inter,system-ui,sans-serif" font-size="7" font-weight="800"
-      fill="rgba(255,255,255,0.6)" letter-spacing="1.5">${cityName}</text>
-    <text id="${uid}dt" x="${cx}" y="76" text-anchor="middle" dominant-baseline="central"
-      font-family="'JetBrains Mono',ui-monospace,monospace" font-size="8.5"
-      fill="${accent}" letter-spacing="0.5">${timeStr}</text>
-
-    <!-- HOME marker -->
-    ${isHome ? `<text x="${cx}" y="131" text-anchor="middle" dominant-baseline="central"
-      font-family="Inter,system-ui,sans-serif" font-size="5.5" font-weight="700"
-      fill="${accent}" letter-spacing="2" opacity="0.75">◆ HOME ◆</text>` : ''}
-
-    <!-- TZ sub-dial -->
-    <rect x="72" y="138" width="56" height="13" rx="3"
-      fill="rgba(0,0,0,0.4)" stroke="rgba(255,255,255,0.05)" stroke-width="0.5"/>
-    <text x="${cx}" y="145" text-anchor="middle" dominant-baseline="central"
-      font-family="'JetBrains Mono',ui-monospace,monospace" font-size="6"
-      fill="rgba(200,200,220,0.5)" letter-spacing="0.3">${shortTz}</text>
-
-    <!-- HOUR HAND — tapered, rotated via transform -->
-    <g id="${uid}hh" transform="rotate(${hour} ${cx} ${cy})">
-      <line x1="${cx}" y1="${cy+16}" x2="${cx}" y2="${cy-52}"
-        stroke="${accent}" stroke-width="5.5" stroke-linecap="round" filter="url(#${uid}sh)"/>
-      <line x1="${cx}" y1="${cy+10}" x2="${cx}" y2="${cy-50}"
-        stroke="rgba(255,255,255,0.4)" stroke-width="1.5" stroke-linecap="round"/>
-    </g>
-
-    <!-- MINUTE HAND -->
-    <g id="${uid}mh" transform="rotate(${min} ${cx} ${cy})">
-      <line x1="${cx}" y1="${cy+18}" x2="${cx}" y2="${cy-72}"
-        stroke="rgba(235,235,248,0.95)" stroke-width="3.5" stroke-linecap="round" filter="url(#${uid}sh)"/>
-      <line x1="${cx}" y1="${cy+12}" x2="${cx}" y2="${cy-70}"
-        stroke="rgba(255,255,255,0.5)" stroke-width="1" stroke-linecap="round"/>
-    </g>
-
-    <!-- SECOND HAND — thin racing style -->
-    <g id="${uid}sh2" transform="rotate(${sec} ${cx} ${cy})">
-      <line x1="${cx}" y1="${cy+22}" x2="${cx}" y2="${cy-80}"
-        stroke="${accent}" stroke-width="1.2" stroke-linecap="round" filter="url(#${uid}gl)"/>
-      <circle cx="${cx}" cy="${cy-64}" r="3.5"
-        fill="none" stroke="${accent}" stroke-width="1.5" opacity="0.9"/>
-      <rect x="${cx-3}" y="${cy+14}" width="6" height="10" rx="2"
-        fill="${accent}" opacity="0.7"/>
-    </g>
-
-    <!-- Centre jewel -->
-    <circle cx="${cx}" cy="${cy}" r="8"   fill="#18182a" stroke="${accentD}" stroke-width="1.5"/>
-    <circle cx="${cx}" cy="${cy}" r="4.5" fill="${accent}" filter="url(#${uid}sg)"/>
-    <circle cx="${cx-1.5}" cy="${cy-1.5}" r="1.5" fill="rgba(255,255,255,0.65)"/>
-  </svg>`;
+  // Guilloche pattern — subtle radial lines on dial
+  const guilloche = Array.from({length: 72}, (_, i) => {
+    const rad = i * 5 * Math.PI / 180;
+    const x1 = +(CX + Math.sin(rad)*28).toFixed(2), y1 = +(CY - Math.cos(rad)*28).toFixed(2);
+    const x2 = +(CX + Math.sin(rad)*58).toFixed(2), y2 = +(CY - Math.cos(rad)*58).toFixed(2);
+    return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="rgba(255,255,255,0.025)" stroke-width="0.5"/>`;
+  }).join('');
 
   if (!container.querySelector('svg')) {
-    container.innerHTML = buildSVG();
+    container.innerHTML = `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"
+      style="width:${size}px;height:${size}px;display:block;overflow:visible;">
+      <defs>
+        <!-- Face gradient — deep dark with slight centre lift -->
+        <radialGradient id="${uid}face" cx="42%" cy="36%" r="72%">
+          <stop offset="0%"   stop-color="#24243a"/>
+          <stop offset="55%"  stop-color="#111120"/>
+          <stop offset="100%" stop-color="#060610"/>
+        </radialGradient>
+
+        <!-- Metallic bezel gradient -->
+        <linearGradient id="${uid}bezel" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%"   stop-color="#6a6a80"/>
+          <stop offset="20%"  stop-color="#38384a"/>
+          <stop offset="50%"  stop-color="#50506a"/>
+          <stop offset="80%"  stop-color="#28283a"/>
+          <stop offset="100%" stop-color="#6a6a80"/>
+        </linearGradient>
+
+        <!-- Outer bezel shine -->
+        <linearGradient id="${uid}bshine" x1="0%" y1="0%" x2="60%" y2="100%">
+          <stop offset="0%"   stop-color="rgba(255,255,255,0.18)"/>
+          <stop offset="100%" stop-color="rgba(255,255,255,0.02)"/>
+        </linearGradient>
+
+        <!-- Hour hand gradient -->
+        <linearGradient id="${uid}hhand" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%"   stop-color="${AD}"/>
+          <stop offset="40%"  stop-color="${A}"/>
+          <stop offset="60%"  stop-color="rgba(255,255,255,0.5)"/>
+          <stop offset="100%" stop-color="${AD}"/>
+        </linearGradient>
+
+        <!-- Minute hand gradient -->
+        <linearGradient id="${uid}mhand" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%"   stop-color="#888899"/>
+          <stop offset="40%"  stop-color="#cccce0"/>
+          <stop offset="60%"  stop-color="rgba(255,255,255,0.55)"/>
+          <stop offset="100%" stop-color="#888899"/>
+        </linearGradient>
+
+        <!-- Glow filter for accent elements -->
+        <filter id="${uid}glow" x="-60%" y="-60%" width="220%" height="220%">
+          <feGaussianBlur stdDeviation="4" result="b"/>
+          <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <filter id="${uid}mglow" x="-30%" y="-30%" width="160%" height="160%">
+          <feGaussianBlur stdDeviation="2" result="b"/>
+          <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <filter id="${uid}drop" x="-20%" y="-20%" width="140%" height="140%">
+          <feDropShadow dx="1" dy="3" stdDeviation="3" flood-color="#000" flood-opacity="0.75"/>
+        </filter>
+        <filter id="${uid}inner" x="0%" y="0%" width="100%" height="100%">
+          <feGaussianBlur stdDeviation="2" result="b" in="SourceAlpha"/>
+          <feOffset dx="0" dy="2" result="offset"/>
+          <feComposite in="SourceGraphic" in2="offset" operator="over"/>
+        </filter>
+        <clipPath id="${uid}clip"><circle cx="${CX}" cy="${CY}" r="${R}"/></clipPath>
+      </defs>
+
+      <!-- ░░ BEZEL ░░ -->
+      <circle cx="${CX}" cy="${CY}" r="${RB}"   fill="url(#${uid}bezel)"/>
+      <circle cx="${CX}" cy="${CY}" r="${RB}"   fill="url(#${uid}bshine)" opacity="0.6"/>
+      <circle cx="${CX}" cy="${CY}" r="${RB}"   fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="0.7"/>
+      <circle cx="${CX}" cy="${CY}" r="${RB-3}" fill="none" stroke="rgba(0,0,0,0.55)"       stroke-width="2.5"/>
+
+      <!-- ░░ DIAL FACE ░░ -->
+      <circle cx="${CX}" cy="${CY}" r="${R}" fill="url(#${uid}face)"/>
+
+      <!-- Guilloche texture -->
+      <g clip-path="url(#${uid}clip)">${guilloche}</g>
+
+      <!-- Inner chapter ring -->
+      <circle cx="${CX}" cy="${CY}" r="${R-1}" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+
+      <!-- ░░ SECONDS PROGRESS ARC ░░ -->
+      <circle id="${uid}arc" cx="${CX}" cy="${CY}" r="${R-8}"
+        fill="none" stroke="${A}" stroke-width="2.5"
+        stroke-dasharray="${secDash} ${circumference}" stroke-linecap="round"
+        opacity="${AO}" transform="rotate(-90 ${CX} ${CY})"
+        filter="url(#${uid}mglow)"/>
+
+      <!-- ░░ TICK MARKS ░░ -->
+      ${minDots}
+      ${hourMarkers}
+
+      <!-- ░░ HOUR HAND ░░ — baton, tapered -->
+      <g id="${uid}hh" transform="rotate(${hour} ${CX} ${CY})" filter="url(#${uid}drop)">
+        <path d="M${CX-4},${CY+15} L${CX},${CY-52} L${CX+4},${CY+15} Z"
+          fill="url(#${uid}hhand)"/>
+        <!-- lume dot on tip -->
+        <circle cx="${CX}" cy="${CY-46}" r="2.5" fill="${A}" opacity="0.6"/>
+        <!-- highlight stripe -->
+        <line x1="${CX}" y1="${CY+10}" x2="${CX}" y2="${CY-50}"
+          stroke="rgba(255,255,255,0.4)" stroke-width="1" stroke-linecap="round"/>
+        <!-- counter-balance -->
+        <path d="M${CX-3},${CY+15} L${CX},${CY+22} L${CX+3},${CY+15} Z"
+          fill="${AD}" opacity="0.7"/>
+      </g>
+
+      <!-- ░░ MINUTE HAND ░░ -->
+      <g id="${uid}mh" transform="rotate(${min} ${CX} ${CY})" filter="url(#${uid}drop)">
+        <path d="M${CX-2.8},${CY+18} L${CX},${CY-72} L${CX+2.8},${CY+18} Z"
+          fill="url(#${uid}mhand)"/>
+        <!-- lume -->
+        <circle cx="${CX}" cy="${CY-66}" r="2" fill="rgba(220,220,240,0.5)"/>
+        <!-- highlight -->
+        <line x1="${CX}" y1="${CY+12}" x2="${CX}" y2="${CY-70}"
+          stroke="rgba(255,255,255,0.45)" stroke-width="0.8" stroke-linecap="round"/>
+        <!-- counter-balance -->
+        <path d="M${CX-2.5},${CY+18} L${CX},${CY+26} L${CX+2.5},${CY+18} Z"
+          fill="#777788" opacity="0.7"/>
+      </g>
+
+      <!-- ░░ SECOND HAND ░░ — super-slim racing style -->
+      <g id="${uid}sh" transform="rotate(${sec} ${CX} ${CY})">
+        <!-- Main shaft -->
+        <line x1="${CX}" y1="${CY+25}" x2="${CX}" y2="${CY-80}"
+          stroke="${A}" stroke-width="1" stroke-linecap="round"
+          filter="url(#${uid}glow)"/>
+        <!-- Lollipop circle -->
+        <circle cx="${CX}" cy="${CY-62}" r="4"
+          fill="${A}" opacity="0.9" filter="url(#${uid}mglow)"/>
+        <circle cx="${CX}" cy="${CY-62}" r="2" fill="#0a0a10"/>
+        <!-- Counter tail with rectangular weight -->
+        <rect x="${CX-3}" y="${CY+15}" width="6" height="12" rx="2"
+          fill="${A}" opacity="0.75"/>
+      </g>
+
+      <!-- ░░ CENTRE JEWEL ░░ -->
+      <circle cx="${CX}" cy="${CY}" r="9.5" fill="#0d0d1a" stroke="${AD}" stroke-width="1.8"/>
+      <circle cx="${CX}" cy="${CY}" r="5.5" fill="${A}" filter="url(#${uid}mglow)"/>
+      <circle cx="${CX}" cy="${CY}" r="5.5" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="0.7"/>
+      <!-- Jewel highlight -->
+      <ellipse cx="${CX-2}" cy="${CY-2}" rx="2.5" ry="1.8" fill="rgba(255,255,255,0.55)"
+        transform="rotate(-30 ${CX-2} ${CY-2})"/>
+
+      <!-- Lens reflection (top-left arc) -->
+      <path d="M ${CX - R*0.55} ${CY - R*0.65} Q ${CX - R*0.2} ${CY - R*0.88} ${CX + R*0.3} ${CY - R*0.7}"
+        fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="12" stroke-linecap="round"/>
+    </svg>`;
+
     container.dataset.uid = uid;
     return;
   }
 
-  // In-place updates — only touch what changes every second
+  // ── In-place update (only changed attributes) ──
   const svg = container.querySelector('svg');
-  const sid = container.dataset.uid || uid;
-  const el  = id => svg.getElementById(id);
+  const sid = container.dataset.uid;
+  if (!svg || !sid) { container.innerHTML = ''; renderLuxuryWatch(container, z, tp, size); return; }
 
-  el(`${sid}arc`)?.setAttribute('stroke-dasharray', `${dashLen} ${circ}`);
-  el(`${sid}dt`)  && (el(`${sid}dt`).textContent = timeStr);
-  el(`${sid}hh`)?.setAttribute('transform',  `rotate(${hour} ${cx} ${cy})`);
-  el(`${sid}mh`)?.setAttribute('transform',  `rotate(${min}  ${cx} ${cy})`);
-  el(`${sid}sh2`)?.setAttribute('transform', `rotate(${sec}  ${cx} ${cy})`);
+  svg.getElementById(`${sid}arc`)?.setAttribute('stroke-dasharray', `${secDash} ${circumference}`);
+  svg.getElementById(`${sid}hh`)?.setAttribute('transform', `rotate(${hour} ${CX} ${CY})`);
+  svg.getElementById(`${sid}mh`)?.setAttribute('transform', `rotate(${min}  ${CX} ${CY})`);
+  svg.getElementById(`${sid}sh`)?.setAttribute('transform', `rotate(${sec}  ${CX} ${CY})`);
 }
 
 // Re-layout and re-render on resize
@@ -1865,6 +1977,7 @@ renderWorldBar();
 renderAlarms();
 updateUI();
 requestNotifPermission();
+setTimeout(getSupabase, 600); // init Supabase auth after page renders
 
 let lastSec = -1;
 function tick() {
@@ -1888,7 +2001,187 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-/* Handle ?tab= URL shortcuts */
+/* ═══════════════════════════════════════
+   STRIPE CHECKOUT + SUPABASE PREMIUM
+═══════════════════════════════════════ */
+
+// ── Supabase config — replace with your project values ──
+const SUPABASE_URL  = 'https://YOUR_PROJECT_ID.supabase.co';
+const SUPABASE_ANON = 'YOUR_SUPABASE_ANON_KEY';
+let _sb = null; // Supabase client instance
+let currentUser = null;
+
+function getSupabase() {
+  if (_sb) return _sb;
+  if (window.supabase?.createClient) {
+    _sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+    _sb.auth.onAuthStateChange(async (_e, session) => {
+      currentUser = session?.user || null;
+      const loginBtn = document.getElementById('loginBtn');
+      if (currentUser) {
+        await syncPremiumStatus(currentUser.id);
+        if (loginBtn) loginBtn.textContent = 'LOGOUT';
+      } else {
+        isPremium = false;
+        localStorage.removeItem('zc_premium');
+        updateUI();
+        if (loginBtn) loginBtn.textContent = 'LOGIN';
+      }
+    });
+    // Restore existing session
+    _sb.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) { currentUser = session.user; syncPremiumStatus(session.user.id); }
+    });
+  }
+  return _sb;
+}
+
+async function syncPremiumStatus(userId) {
+  try {
+    const res = await fetch('/.netlify/functions/get-premium-status', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId }),
+    });
+    if (res.ok) {
+      const { isPremium: p } = await res.json();
+      isPremium = p;
+      localStorage.setItem('zc_premium', p ? 'true' : 'false');
+      updateUI();
+    }
+  } catch { /* offline — use localStorage cache */ }
+}
+
+async function signInWithEmail(email, password) {
+  const sb = getSupabase();
+  if (!sb) { showToast('Auth not configured'); return; }
+  const { data, error } = await sb.auth.signInWithPassword({ email, password });
+  if (error) { showToast('❌ ' + error.message); return; }
+  currentUser = data.user;
+  closeLoginModal();
+  showToast('✅ Signed in!');
+}
+
+async function signUpWithEmail(email, password) {
+  const sb = getSupabase();
+  if (!sb) { showToast('Auth not configured'); return; }
+  const { error } = await sb.auth.signUp({ email, password });
+  if (error) { showToast('❌ ' + error.message); return; }
+  closeLoginModal();
+  showToast('📧 Check your email to confirm your account');
+}
+
+async function authSignOut() {
+  const sb = getSupabase();
+  if (sb) await sb.auth.signOut();
+  currentUser = null; isPremium = false;
+  localStorage.removeItem('zc_premium');
+  updateUI();
+  showToast('Signed out');
+}
+
+// Called when user clicks Subscribe in the premium modal
+async function startCheckout() {
+  const emailInput = document.getElementById('checkoutEmail');
+  const errEl      = document.getElementById('checkoutError');
+  const btn        = document.getElementById('checkoutBtn');
+  const email      = emailInput?.value.trim();
+
+  if (!email || !email.includes('@')) {
+    errEl.textContent = 'Please enter a valid email address.';
+    errEl.style.display = 'block';
+    emailInput.focus();
+    return;
+  }
+
+  errEl.style.display = 'none';
+  btn.textContent = '⏳ Redirecting to checkout…';
+  btn.disabled    = true;
+
+  try {
+    const res = await fetch('/.netlify/functions/create-checkout', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ email }),
+    });
+    const data = await res.json();
+
+    if (data.url) {
+      // Save email so we can check premium status after redirect back
+      localStorage.setItem('zc_email', email);
+      window.location.href = data.url;
+    } else {
+      throw new Error(data.error || 'Checkout failed');
+    }
+  } catch (err) {
+    errEl.textContent = 'Payment service unavailable. Please try again.';
+    errEl.style.display = 'block';
+    btn.textContent = '🔒 Subscribe — $5/month';
+    btn.disabled    = false;
+  }
+}
+
+// Check premium status from Supabase (called on load and after login)
+async function checkPremiumStatus(email) {
+  if (!email) return false;
+  try {
+    const res = await fetch('/.netlify/functions/check-premium', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ email }),
+    });
+    const data = await res.json();
+    return data.premium === true;
+  } catch {
+    return false;
+  }
+}
+
+// Handle return from Stripe checkout (?premium=success)
+async function handleStripeReturn() {
+  const params  = new URLSearchParams(window.location.search);
+  const status  = params.get('premium');
+  const email   = localStorage.getItem('zc_email');
+
+  if (status === 'success' && email) {
+    // Verify with backend
+    const premium = await checkPremiumStatus(email);
+    if (premium) {
+      isPremium = true;
+      localStorage.setItem('zc_premium', 'true');
+      updateUI();
+      showToast('🎉 Welcome to ZoneClock Premium!');
+    } else {
+      // Stripe confirmed, wait for webhook — optimistically activate
+      isPremium = true;
+      localStorage.setItem('zc_premium', 'true');
+      updateUI();
+      showToast('✅ Payment received! Premium activated.');
+    }
+    // Clean URL
+    window.history.replaceState({}, '', window.location.pathname);
+  } else if (status === 'cancelled') {
+    showToast('Payment cancelled — you can upgrade anytime.');
+    window.history.replaceState({}, '', window.location.pathname);
+  }
+}
+
+// On load: check if returning from Stripe, and re-verify premium on login
+window.addEventListener('load', () => {
+  handleStripeReturn();
+
+  // If logged-in email is stored, re-verify premium status silently
+  const storedEmail = localStorage.getItem('zc_email');
+  if (storedEmail && isPremium) {
+    checkPremiumStatus(storedEmail).then(verified => {
+      if (!verified && isPremium) {
+        // Revoke if Supabase says not premium
+        isPremium = false;
+        localStorage.setItem('zc_premium', 'false');
+        updateUI();
+      }
+    });
+  }
+});
 (function() {
   const urlParams = new URLSearchParams(window.location.search);
   const tabParam = urlParams.get('tab');
