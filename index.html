@@ -1138,11 +1138,11 @@ function renderLuxuryWatch(container, z, tp, size) {
       <!-- Inner chapter ring -->
       <circle cx="${CX}" cy="${CY}" r="${R-1}" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
 
-      <!-- ░░ BRAND MARK — "ZC" matching ZoneClock logo: Z=white, C=lime green ░░ -->
-      <text x="${CX}" y="${CY + R*0.42}" text-anchor="middle" dominant-baseline="central"
-        font-family="Inter,system-ui,sans-serif" font-size="${Math.max(9, R*0.16)}" font-weight="800"
+      <!-- ░░ BRAND MARK — "ZC" top-middle, like a watchmaker's logo. Fixed ZoneClock colors on every clock. ░░ -->
+      <text x="${CX}" y="${CY - R*0.46}" text-anchor="middle" dominant-baseline="central"
+        font-family="Inter,system-ui,sans-serif" font-size="${Math.max(9, R*0.155)}" font-weight="800"
         letter-spacing="0.5">
-        <tspan fill="rgba(255,255,255,0.95)">Z</tspan><tspan fill="${A}">C</tspan>
+        <tspan fill="rgba(255,255,255,0.95)">Z</tspan><tspan fill="#c8f060">C</tspan>
       </text>
 
       <!-- ░░ SECONDS PROGRESS ARC ░░ — no glow filter (was causing the visible stripe) -->
