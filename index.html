@@ -1110,11 +1110,11 @@ function renderLuxuryWatch(container, z, tp, size) {
 
         <!-- Glow filter for accent elements -->
         <filter id="${uid}glow" x="-60%" y="-60%" width="220%" height="220%">
-          <feGaussianBlur stdDeviation="4" result="b"/>
+          <feGaussianBlur stdDeviation="1.5" result="b"/>
           <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
         </filter>
         <filter id="${uid}mglow" x="-30%" y="-30%" width="160%" height="160%">
-          <feGaussianBlur stdDeviation="2" result="b"/>
+          <feGaussianBlur stdDeviation="1" result="b"/>
           <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
         </filter>
         <filter id="${uid}drop" x="-20%" y="-20%" width="140%" height="140%">
@@ -1138,12 +1138,18 @@ function renderLuxuryWatch(container, z, tp, size) {
       <!-- Inner chapter ring -->
       <circle cx="${CX}" cy="${CY}" r="${R-1}" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
 
-      <!-- ░░ SECONDS PROGRESS ARC ░░ -->
+      <!-- ░░ BRAND MARK — "ZC" matching ZoneClock logo: Z=white, C=lime green ░░ -->
+      <text x="${CX}" y="${CY + R*0.42}" text-anchor="middle" dominant-baseline="central"
+        font-family="Inter,system-ui,sans-serif" font-size="${Math.max(9, R*0.16)}" font-weight="800"
+        letter-spacing="0.5">
+        <tspan fill="rgba(255,255,255,0.95)">Z</tspan><tspan fill="${A}">C</tspan>
+      </text>
+
+      <!-- ░░ SECONDS PROGRESS ARC ░░ — no glow filter (was causing the visible stripe) -->
       <circle id="${uid}arc" cx="${CX}" cy="${CY}" r="${R-8}"
-        fill="none" stroke="${A}" stroke-width="2.5"
+        fill="none" stroke="${A}" stroke-width="2"
         stroke-dasharray="${secDash} ${circumference}" stroke-linecap="round"
-        opacity="${AO}" transform="rotate(-90 ${CX} ${CY})"
-        filter="url(#${uid}mglow)"/>
+        opacity="${AO}" transform="rotate(-90 ${CX} ${CY})"/>
 
       <!-- ░░ TICK MARKS ░░ -->
       ${minDots}
@@ -1199,10 +1205,6 @@ function renderLuxuryWatch(container, z, tp, size) {
       <!-- Jewel highlight -->
       <ellipse cx="${CX-2}" cy="${CY-2}" rx="2.5" ry="1.8" fill="rgba(255,255,255,0.55)"
         transform="rotate(-30 ${CX-2} ${CY-2})"/>
-
-      <!-- Subtle lens sheen — thin, not a thick stripe -->
-      <path d="M ${+(CX - R*0.45).toFixed(1)} ${+(CY - R*0.6).toFixed(1)} Q ${+(CX).toFixed(1)} ${+(CY - R*0.82).toFixed(1)} ${+(CX + R*0.35).toFixed(1)} ${+(CY - R*0.55).toFixed(1)}"
-        fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="2.5" stroke-linecap="round"/>
     </svg>`;
 
     container.dataset.uid = uid;
