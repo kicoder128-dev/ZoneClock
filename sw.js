@@ -127,19 +127,17 @@ self.addEventListener('push', event => {
 /* ── Notification click handler ── */
 self.addEventListener('notificationclick', event => {
   event.notification.close();
-  if (event.action === 'snooze') {
-    // Post message to app to snooze
-    self.clients.matchAll({ type: 'window' }).then(clients => {
-      clients.forEach(c => c.postMessage({ action: 'snooze' }));
-    });
-  } else {
-    // Open/focus the app
-    event.waitUntil(
-      self.clients.matchAll({ type: 'window' }).then(clients => {
-        const existing = clients.find(c => c.url.includes('zoneclock') || c.url.includes(self.location.origin));
-        if (existing) return existing.focus();
-        return self.clients.openWindow('/');
-      })
-    );
-  }
+  const action = event.action; // 'dismiss', 'snooze', or '' (body tap)
+
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clients => {
+      // Tell every open ZoneClock tab what happened
+      clients.forEach(c => c.postMessage({ type: 'alarm-action', action: action || 'open' }));
+
+      // Focus an existing tab, or open a new one
+      const existing = clients.find(c => c.url.includes(self.location.origin));
+      if (existing) return existing.focus();
+      return self.clients.openWindow('./index.html');
+    })
+  );
 });
