@@ -589,7 +589,7 @@
 <!-- FULLSCREEN DESK VIEW -->
 <div id="deskViewOverlay" style="display:none;position:fixed;inset:0;z-index:800;background:var(--bg);overflow:hidden;width:100vw;height:100vh;height:100dvh;">
   <!-- Top bar — minimal, fades out after 3s of inactivity -->
-  <div id="deskViewBar" style="display:flex;align-items:center;justify-content:space-between;padding:max(14px,env(safe-area-inset-top,14px)) 20px 12px;position:absolute;top:0;left:0;right:0;z-index:2;background:linear-gradient(rgba(10,10,15,0.92),rgba(10,10,15,0.4),transparent);transition:opacity 0.4s;" id="deskViewBar">
+  <div id="deskViewBar" style="display:flex;align-items:center;justify-content:space-between;padding:max(14px,env(safe-area-inset-top,14px)) 20px 12px;position:absolute;top:0;left:0;right:0;z-index:2;background:linear-gradient(rgba(10,10,15,0.92),rgba(10,10,15,0.4),transparent);transition:opacity 0.4s;">
     <div style="display:flex;align-items:center;gap:8px;">
       <img src="icon-192.png" style="width:28px;height:28px;border-radius:7px;">
       <span style="font-size:14px;font-weight:700;color:var(--text);">Zone<span style="color:var(--accent);">Clock</span></span>
@@ -603,7 +603,7 @@
     </div>
   </div>
   <!-- Clock grid — positioned below bar, respects iOS safe-area -->
-  <div id="deskViewGrid" style="position:absolute;left:0;right:0;bottom:0;display:grid;" id="deskViewGrid"></div>
+  <div id="deskViewGrid" style="position:absolute;left:0;right:0;bottom:0;display:grid;"></div>
 </div>
 
 <!-- MODALS & OVERLAYS -->
@@ -674,17 +674,6 @@
     <div class="login-error" id="loginError">Incorrect username or password.</div>
     <button class="login-submit" onclick="submitLogin()">Sign In</button>
     <span class="login-cancel" onclick="closeLoginModal()">Cancel</span>
-  </div>
-</div>
-
-<!-- INSTALL PROMPT SHEET -->
-<div class="install-overlay" id="installOverlay">
-  <div class="install-sheet">
-    <h3><img src="icon-192.png" style="width:32px;height:32px;border-radius:8px;"> Add ZoneClock to your Home Screen</h3>
-    <p id="installDesc">Get the full app experience — works offline, launches instantly, and sends alarm notifications.</p>
-    <div class="install-steps" id="installSteps"></div>
-    <button class="install-action-btn" id="installActionBtn" onclick="installAction()">Add to Home Screen</button>
-    <span class="install-dismiss" onclick="dismissInstall()">Not now — remind me later</span>
   </div>
 </div>
 
@@ -1770,7 +1759,10 @@ function dismissAlarm(id) {
   delete lastFiredMinute[id];
   const card = document.getElementById('alarm-card-' + id);
   if (card) card.classList.remove('firing');
-  if (firingAlarmIds.size === 0) document.getElementById('alarmOverlay').classList.remove('show');
+  if (firingAlarmIds.size === 0) {
+    document.getElementById('alarmOverlay').classList.remove('show');
+    stopAlarmSound();
+  }
   renderAlarms();
 }
 
@@ -1809,7 +1801,7 @@ function renderAlarms() {
   }).join('');
 }
 
-function tickLookup() {
+function checkAlarms() {
   const now = new Date();
   alarms.forEach(a => {
     if (!a.enabled) return;
@@ -1831,6 +1823,97 @@ function tickLookup() {
   });
 }
 
+// Refresh the World Lookup tab's live time display if it's open
+function tickLookup() {
+  const lkResults = document.getElementById('lkResults');
+  if (lkResults && lkResults.style.display === 'block' && typeof runMeetingLookup === 'function') {
+    runMeetingLookup();
+  }
+}
+
+/* ═══════════════════════════════════════
+   ALARM SOUND — Web Audio API, no external file needed
+═══════════════════════════════════════ */
+let _alarmAudioCtx = null;
+let _alarmSoundInterval = null;
+
+function getAudioCtx() {
+  if (!_alarmAudioCtx) {
+    try { _alarmAudioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+    catch (e) { return null; }
+  }
+  // iOS/Safari suspends the context until a user gesture resumes it
+  if (_alarmAudioCtx.state === 'suspended') _alarmAudioCtx.resume().catch(() => {});
+  return _alarmAudioCtx;
+}
+
+// Unlock audio on first user interaction (required by iOS Safari & Chrome autoplay policy)
+['click', 'touchstart', 'keydown'].forEach(evt =>
+  document.addEventListener(evt, () => getAudioCtx(), { once: true, passive: true })
+);
+
+function playBeepSequence() {
+  const ctx = getAudioCtx();
+  if (!ctx) return;
+  const now = ctx.currentTime;
+  // Three ascending beeps, classic alarm pattern
+  [0, 0.28, 0.56].forEach((offset, i) => {
+    const osc  = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(880 + i * 110, now + offset);
+    gain.gain.setValueAtTime(0, now + offset);
+    gain.gain.linearRampToValueAtTime(0.28, now + offset + 0.02);
+    gain.gain.linearRampToValueAtTime(0, now + offset + 0.22);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start(now + offset);
+    osc.stop(now + offset + 0.24);
+  });
+}
+
+function startAlarmSound() {
+  stopAlarmSound(); // clear any existing loop first
+  playBeepSequence();
+  // Repeat the beep sequence every 1.4s until dismissed
+  _alarmSoundInterval = setInterval(playBeepSequence, 1400);
+}
+
+function stopAlarmSound() {
+  if (_alarmSoundInterval) { clearInterval(_alarmSoundInterval); _alarmSoundInterval = null; }
+}
+
+/* ═══════════════════════════════════════
+   DEVICE / BROWSER NOTIFICATION
+═══════════════════════════════════════ */
+async function fireDeviceNotification(title, body) {
+  if (!('Notification' in window)) return;
+
+  // Ask for permission right now if not yet decided — many browsers allow
+  // this on a "trusted" trigger like an alarm firing while tab is focused.
+  if (Notification.permission === 'default') {
+    try { await Notification.requestPermission(); } catch (e) {}
+  }
+  if (Notification.permission !== 'granted') return;
+
+  const opts = {
+    body, icon: 'icon-192.png', badge: 'icon-32.png', tag: 'zoneclock-alarm',
+    requireInteraction: true, vibrate: [300, 100, 300, 100, 300],
+    actions: [{ action: 'dismiss', title: 'Dismiss' }, { action: 'snooze', title: 'Snooze 5 min' }],
+  };
+
+  // Prefer the Service Worker route — required for actions[] and works
+  // even when the tab isn't focused / is backgrounded on mobile.
+  if ('serviceWorker' in navigator) {
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      await reg.showNotification(title, opts);
+      return;
+    } catch (e) { /* fall through to plain Notification */ }
+  }
+  // Fallback — plain Notification (actions[] ignored by most browsers here)
+  try { new Notification(title, opts); } catch (e) {}
+}
+
 function triggerAlarmOverlay(a) {
   firingAlarmIds.add(a.id);
   currentFiringAlarm = a;
@@ -1839,7 +1922,7 @@ function triggerAlarmOverlay(a) {
   const overlay = document.getElementById('alarmOverlay');
   if(!overlay) return;
   document.getElementById('alarmOverlayLabel').textContent = a.label || 'ZoneClock Reminder';
-  
+
   const [h, m] = a.time.split(':');
   let timeText = a.time;
   if(hourFormat === 12) {
@@ -1849,22 +1932,25 @@ function triggerAlarmOverlay(a) {
   document.getElementById('alarmOverlayTime').textContent = `${timeText} (${a.zoneLabel} standard)`;
   overlay.classList.add('show');
 
-  if (Notification.permission === 'granted') {
-    navigator.serviceWorker.ready.then(reg => {
-      reg.showNotification(a.label || 'Alarm Notification', {
-        body: `Your alarm for ${timeText} (${a.zoneLabel}) is firing!`,
-        icon: '/icon-192.png', badge: '/icon-32.png', tag: 'zoneclock-alarm',
-        requireInteraction: true,
-        actions: [{ action: 'dismiss', title: 'Dismiss' }, { action: 'snooze', title: 'Snooze 5 min' }]
-      });
-    });
-  }
+  // 🔊 Play the alarm sound, looping until dismissed
+  startAlarmSound();
+
+  // 📱 Fire a device-level notification so it's visible even if the tab is backgrounded
+  fireDeviceNotification(
+    a.label || 'ZoneClock Alarm',
+    `${timeText} (${a.zoneLabel}) — tap to open ZoneClock`
+  );
+
+  // Try to vibrate directly too (works even without notification permission on Android)
+  if (navigator.vibrate) { try { navigator.vibrate([300, 100, 300, 100, 300]); } catch(e) {} }
 }
 
 function overlayDismiss() {
+  stopAlarmSound();
   if (currentFiringAlarm) { dismissAlarm(currentFiringAlarm.id); currentFiringAlarm = null; }
 }
 function overlaySnooze() {
+  stopAlarmSound();
   if (!currentFiringAlarm) return;
   const a = currentFiringAlarm;
   dismissAlarm(a.id);
@@ -2042,6 +2128,7 @@ function tick() {
     lastSec = s;
     renderClocks();
     renderWorldBar();
+    checkAlarms();
     if(s % 10 === 0) tickLookup();
     if(deskViewActive) renderDeskView();
   }
@@ -2348,4 +2435,3 @@ window.addEventListener('appinstalled', () => { dismissInstallPopup(); showToast
 </div>
 </body>
 </html>
-
