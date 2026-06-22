@@ -520,6 +520,9 @@
 
   <!-- ALARMS PANEL -->
   <div id="panel-alarms" class="tab-panel">
+    <div id="iosAlarmWarning" style="display:none;background:rgba(240,160,96,0.08);border:1px solid rgba(240,160,96,0.25);border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:12px;line-height:1.5;color:var(--warn);">
+      <strong>⚠️ iOS limitation:</strong> Safari pauses alarms when ZoneClock is in the background or the screen is locked. For reliable alarms, <strong>keep this tab open and your screen on</strong>, or add ZoneClock to your Home Screen and keep it running in the foreground.
+    </div>
     <div class="alarm-add-row">
       <select class="alarm-select" id="alarmZoneSelect"></select>
       <input type="time" class="alarm-time-input" id="alarmTimeInput">
@@ -1265,11 +1268,26 @@ function updateUI() {
   }
   if (atLimit) {
     document.getElementById('limitNotice').classList.add('show');
-    // Close dropdown if open
+    // Use class to close dropdown, NOT inline style (inline style overrides CSS classes permanently)
     const dd = document.getElementById('tzDropdown');
-    if (dd) dd.style.display = 'none';
+    if (dd) dd.classList.remove('open');
   } else {
     document.getElementById('limitNotice').classList.remove('show');
+    // Explicitly restore search input in case it was blocked
+    if (searchInput) {
+      searchInput.disabled = false;
+      searchInput.placeholder = 'Search global standard city or region...';
+    }
+    if (searchWrap) {
+      searchWrap.style.opacity = '';
+      searchWrap.style.pointerEvents = '';
+    }
+    if (addBtn) {
+      addBtn.disabled = false;
+      addBtn.style.opacity = '';
+      addBtn.style.cursor = '';
+      addBtn.onclick = addSelectedZone;
+    }
   }
 }
 
@@ -1729,9 +1747,14 @@ function addAlarm() {
 function deleteAlarm(id) {
   alarms = alarms.filter(a => a.id !== id);
   firingAlarmIds.delete(id);
-  delete lastFiredMinute[id];
+  // Do NOT delete lastFiredMinute[id] — keeps it from instantly re-firing
+  // if checkAlarms() runs again within the same minute window.
   saveAlarms();
-  if (firingAlarmIds.size === 0) document.getElementById('alarmOverlay').classList.remove('show');
+  if (firingAlarmIds.size === 0) {
+    document.getElementById('alarmOverlay').classList.remove('show');
+    stopAlarmSound();
+    if (currentFiringAlarm && currentFiringAlarm.id === id) currentFiringAlarm = null;
+  }
   renderAlarms();
 }
 
@@ -1741,10 +1764,18 @@ function toggleAlarm(id) {
     alarm.enabled = !alarm.enabled;
     if (!alarm.enabled) {
       firingAlarmIds.delete(id);
+    } else {
+      // Re-enabling: clear the "already fired" marker so it can trigger
+      // again today if its time comes around — otherwise a dismissed-then-
+      // re-enabled alarm would silently never fire again until tomorrow.
       delete lastFiredMinute[id];
     }
     saveAlarms();
-    if (firingAlarmIds.size === 0) document.getElementById('alarmOverlay').classList.remove('show');
+    if (firingAlarmIds.size === 0) {
+      document.getElementById('alarmOverlay').classList.remove('show');
+      stopAlarmSound();
+      if (currentFiringAlarm && currentFiringAlarm.id === id) currentFiringAlarm = null;
+    }
     renderAlarms();
   }
 }
@@ -1752,18 +1783,6 @@ function toggleAlarm(id) {
 function updateAlarmLabel(id, text) {
   const alarm = alarms.find(a => a.id === id);
   if (alarm) { alarm.label = text; saveAlarms(); }
-}
-
-function dismissAlarm(id) {
-  firingAlarmIds.delete(id);
-  delete lastFiredMinute[id];
-  const card = document.getElementById('alarm-card-' + id);
-  if (card) card.classList.remove('firing');
-  if (firingAlarmIds.size === 0) {
-    document.getElementById('alarmOverlay').classList.remove('show');
-    stopAlarmSound();
-  }
-  renderAlarms();
 }
 
 function renderAlarms() {
@@ -1794,7 +1813,7 @@ function renderAlarms() {
           <div class="alarm-meta">${a.zoneLabel} Time Zone (${getOffset(a.tz)})</div>
           <input type="text" class="alarm-label-input" placeholder="Label asset reminder..." value="${a.label}" onchange="updateAlarmLabel('${a.id}', this.value)">
         </div>
-        <button class="alarm-dismiss-btn" onclick="dismissAlarm('${a.id}')">Clear</button>
+        <button class="alarm-dismiss-btn" onclick="dismissAlarm('${a.id}')">Turn Off</button>
         <button class="alarm-del" onclick="deleteAlarm('${a.id}')">×</button>
       </div>
     `;
@@ -1946,8 +1965,42 @@ function triggerAlarmOverlay(a) {
 }
 
 function overlayDismiss() {
+  // Stop sound and close overlay immediately — don't wait for anything
   stopAlarmSound();
-  if (currentFiringAlarm) { dismissAlarm(currentFiringAlarm.id); currentFiringAlarm = null; }
+  document.getElementById('alarmOverlay').classList.remove('show');
+
+  // Disable all currently firing alarms so they don't re-trigger
+  firingAlarmIds.forEach(id => {
+    const alarm = alarms.find(a => a.id === id);
+    if (alarm) alarm.enabled = false;
+  });
+  firingAlarmIds.clear();
+  currentFiringAlarm = null;
+
+  saveAlarms();
+  renderAlarms();
+
+  // Close any OS notification
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.ready.then(reg =>
+      reg.getNotifications({ tag: 'zoneclock-alarm' }).then(ns => ns.forEach(n => n.close()))
+    ).catch(() => {});
+  }
+}
+
+function dismissAlarm(id) {
+  // Called from the "Turn Off" button on individual alarm cards
+  const alarm = alarms.find(a => a.id === id);
+  if (alarm) alarm.enabled = false;
+  firingAlarmIds.delete(id);
+  if (currentFiringAlarm && currentFiringAlarm.id === id) currentFiringAlarm = null;
+
+  stopAlarmSound();
+  if (firingAlarmIds.size === 0) {
+    document.getElementById('alarmOverlay').classList.remove('show');
+  }
+  saveAlarms();
+  renderAlarms();
 }
 function overlaySnooze() {
   stopAlarmSound();
@@ -2136,11 +2189,67 @@ function tick() {
 }
 requestAnimationFrame(tick);
 
+/* ═══════════════════════════════════════
+   iOS BACKGROUND LIMITATION HANDLING
+   iOS Safari suspends JS timers (setInterval/RAF) when the tab is
+   backgrounded or the screen locks — this is a WebKit platform limit,
+   not something we can override from JS. We mitigate by:
+   1) Warning the user clearly on the Alarms tab.
+   2) Catching up instantly via the Page Visibility API the moment
+      the tab regains focus, so a missed alarm still fires (a bit late,
+      but reliably) instead of silently vanishing.
+═══════════════════════════════════════ */
+function isIOS() {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+}
+
+(function initIOSWarning() {
+  if (isIOS()) {
+    const el = document.getElementById('iosAlarmWarning');
+    if (el) el.style.display = 'block';
+  }
+})();
+
+let _lastVisibilityCheck = Date.now();
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    // Tab just came back to foreground — immediately re-check alarms
+    // in case any were missed while backgrounded (common on iOS).
+    const gapMs = Date.now() - _lastVisibilityCheck;
+    if (gapMs > 5000) checkAlarms(); // only matters if we were away a while
+  } else {
+    _lastVisibilityCheck = Date.now();
+  }
+});
+window.addEventListener('focus', checkAlarms);
+window.addEventListener('pageshow', checkAlarms);
+
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('sw.js')
       .then(reg => console.log('ZoneClock SW registered:', reg.scope))
       .catch(err => console.warn('SW registration failed:', err));
+  });
+
+  // Listen for actions taken on the OS-level notification
+  // (Dismiss / Snooze buttons, or tapping the notification body)
+  navigator.serviceWorker.addEventListener('message', event => {
+    const data = event.data;
+    if (!data || data.type !== 'alarm-action') return;
+
+    if (data.action === 'snooze') {
+      if (currentFiringAlarm) overlaySnooze();
+      else if (firingAlarmIds.size > 0) {
+        // No overlay context (tab was backgrounded) — snooze the most recent firing alarm
+        const id = [...firingAlarmIds][0];
+        const a = alarms.find(x => x.id === id);
+        if (a) { currentFiringAlarm = a; overlaySnooze(); }
+      }
+    } else if (data.action === 'dismiss') {
+      if (currentFiringAlarm) overlayDismiss();
+      else firingAlarmIds.forEach(id => dismissAlarm(id));
+    }
+    // action === 'open' (notification body tap) — just bring tab to front, nothing else to do
   });
 }
 
