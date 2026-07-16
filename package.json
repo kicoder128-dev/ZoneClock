@@ -1,0 +1,9 @@
+{
+  "name": "zoneclock",
+  "version": "1.0.0",
+  "description": "ZoneClock — World Time Zones PWA",
+  "dependencies": {
+    "stripe": "^14.0.0",
+    "@supabase/supabase-js": "^2.39.0"
+  }
+}
