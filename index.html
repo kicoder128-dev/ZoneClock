@@ -39,7 +39,7 @@
 <meta property="og:type" content="website">
 
 <!-- Supabase SDK -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <!-- Fonts -->
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -1466,11 +1466,18 @@ function renderClocks() {
   const container = document.getElementById('clocksContainer');
   if (!container) return;
   if (userZones.length === 0) {
-    container.innerHTML = `<div class="empty-state"><div class="empty-icon">🗺️</div>No monitored track points. Type below to query a tracking zone.</div>`;
+    container.innerHTML = `<div class="empty-state"><div class="empty-icon">🌍</div>No clocks yet. Search a city below to add one.</div>`;
     return;
   }
-  
-  if (container.children.length !== userZones.length) {
+
+  // Rebuild if count doesn't match OR if any card's data-tz is wrong
+  const needsRebuild = container.children.length !== userZones.length ||
+    userZones.some((z, i) => {
+      const card = document.getElementById(`card-${i}`);
+      return !card || card.dataset.tz !== z.tz;
+    });
+
+  if (needsRebuild) {
     container.innerHTML = userZones.map((z, i) => buildClockHTML(z, i)).join('');
   }
 
@@ -2258,14 +2265,19 @@ if ('serviceWorker' in navigator) {
 ═══════════════════════════════════════ */
 
 // ── Supabase config — replace with your project values ──
-const SUPABASE_URL  = https://yqajtalsnbbxmmkgrmqb.supabase.co
-const SUPABASE_ANON = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlxYWp0YWxzbmJieG1ta2dybXFiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxMDY4NzAsImV4cCI6MjA5NzY4Mjg3MH0.xROY9sqMCXQmrEbpi7HBexh-7vEkUvw1sLjIF8uf_88
+const SUPABASE_URL  = 'https://YOUR_PROJECT_ID.supabase.co';
+const SUPABASE_ANON = 'YOUR_SUPABASE_ANON_KEY';
 let _sb = null; // Supabase client instance
 let currentUser = null;
 
+// Returns true only when real credentials have been filled in
+const SUPABASE_READY = !SUPABASE_URL.includes('YOUR_PROJECT') && !SUPABASE_ANON.includes('YOUR_SUPABASE');
+
 function getSupabase() {
+  if (!SUPABASE_READY) return null; // placeholder creds — skip silently
   if (_sb) return _sb;
-  if (window.supabase?.createClient) {
+  if (!window.supabase?.createClient) return null; // CDN not loaded yet
+  try {
     _sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
     _sb.auth.onAuthStateChange(async (_e, session) => {
       currentUser = session?.user || null;
@@ -2283,8 +2295,8 @@ function getSupabase() {
     // Restore existing session
     _sb.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) { currentUser = session.user; syncPremiumStatus(session.user.id); }
-    });
-  }
+    }).catch(() => {});
+  } catch(e) { console.warn('Supabase init failed:', e); _sb = null; }
   return _sb;
 }
 
