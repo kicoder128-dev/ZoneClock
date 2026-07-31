@@ -205,7 +205,37 @@
   .modal-overlay.show { display:flex; }
   .modal { background:var(--surface2); border:1px solid rgba(200,240,96,0.18); border-radius:22px; padding:36px 28px; max-width:420px; width:100%; animation:popIn 0.3s cubic-bezier(0.34,1.56,0.64,1); }
   @keyframes popIn { from{opacity:0;transform:scale(0.86)} to{opacity:1;transform:none} }
-  @keyframes slideUp { from{opacity:0;transform:translateY(60px)} to{opacity:1;transform:translateY(0)} }
+  /* ── CALENDAR CONVERTER ── */
+  .cal-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 18px;
+    transition: border-color 0.18s;
+    position: relative;
+  }
+  .cal-card:hover { border-color: var(--border-hover); }
+  .cal-card.primary { border-color: rgba(200,240,96,0.3); background: rgba(200,240,96,0.04); }
+  .cal-card-name {
+    font-size: 11px; font-weight: 700; font-family: var(--mono);
+    letter-spacing: 1px; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 6px;
+  }
+  .cal-card.primary .cal-card-name { color: var(--accent); }
+  .cal-card-date {
+    font-size: 17px; font-weight: 700; color: var(--text);
+    letter-spacing: -0.3px; margin-bottom: 4px; line-height: 1.2;
+  }
+  .cal-card-sub {
+    font-family: var(--mono); font-size: 11px; color: var(--muted);
+  }
+  .cal-card-flag {
+    position: absolute; top: 12px; right: 14px; font-size: 18px;
+  }
+  .cal-info-item { display: flex; flex-direction: column; gap: 3px; }
+  .cal-info-label { font-family: var(--mono); font-size: 10px; color: var(--muted); letter-spacing: 0.5px; text-transform: uppercase; }
+  .cal-info-value { font-size: 14px; font-weight: 600; color: var(--text); }
+
   .modal-icon { font-size:32px; margin-bottom:16px; }
   .modal h2 { font-size:22px; font-weight:800; margin-bottom:8px; }
   .modal h2 span { color:var(--accent); }
@@ -483,6 +513,7 @@
     <button class="tab-btn" onclick="switchTab('alarms', this)"><span class="tab-icon">⏰</span><span class="tab-text">Alarms</span></button>
     <button class="tab-btn" onclick="switchTab('converter', this)"><span class="tab-icon">🔄</span><span class="tab-text">Converter</span></button>
     <button class="tab-btn" onclick="switchTab('lookup', this)"><span class="tab-icon">🔍</span><span class="tab-text">Lookup</span></button>
+    <button class="tab-btn" onclick="switchTab('calendar', this)"><span class="tab-icon">📅</span><span class="tab-text">Calendar</span></button>
     <button class="tab-btn" onclick="switchTab('deskview', this)"><span class="tab-icon">🖥️</span><span class="tab-text">Desk View</span></button>
   </div>
 
@@ -579,6 +610,60 @@
     <div id="lkEmpty" class="empty-state" style="padding:30px 20px;">
       <div class="empty-icon">🔍</div>
       Select a target town above to test standard operational shifts.
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       CALENDAR CONVERTER PANEL
+  ══════════════════════════════════════ -->
+  <div id="panel-calendar" class="tab-panel">
+    <div class="converter-box">
+      <h3><span class="ch-icon">📅</span> Calendar Converter</h3>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.6;">Convert any date between the world's major calendar systems.</p>
+
+      <!-- Date input row -->
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:18px 20px;margin-bottom:20px;">
+        <div style="font-family:var(--mono);font-size:9px;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);margin-bottom:12px;">Input Date</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+          <input type="date" id="calInput" class="conv-input" style="flex:1;min-width:160px;" oninput="convertCalendar()"/>
+          <select id="calInputSystem" class="conv-select" style="flex:1;min-width:160px;" onchange="convertCalendar()">
+            <option value="gregorian">Gregorian (CE)</option>
+            <option value="hijri">Hijri (Islamic)</option>
+            <option value="hebrew">Hebrew</option>
+            <option value="persian">Persian (Solar Hijri)</option>
+            <option value="ethiopian">Ethiopian</option>
+            <option value="coptic">Coptic</option>
+          </select>
+        </div>
+        <!-- Manual day/month/year for non-Gregorian input -->
+        <div id="calManualInput" style="display:none;margin-top:12px;display:none;">
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <input type="number" id="calManDay"   placeholder="Day"   min="1" max="30" class="conv-input" style="flex:1;min-width:70px;" oninput="convertCalendarManual()"/>
+            <input type="number" id="calManMonth" placeholder="Month" min="1" max="13" class="conv-input" style="flex:1;min-width:70px;" oninput="convertCalendarManual()"/>
+            <input type="number" id="calManYear"  placeholder="Year"  class="conv-input" style="flex:1;min-width:100px;" oninput="convertCalendarManual()"/>
+          </div>
+          <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:6px;" id="calManHint"></div>
+        </div>
+      </div>
+
+      <!-- Today shortcut -->
+      <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;">
+        <button onclick="setCalToday()" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font);font-size:13px;padding:8px 16px;cursor:pointer;transition:border-color 0.18s;-webkit-tap-highlight-color:transparent;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">📌 Today</button>
+        <button onclick="setCalYesterday()" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font);font-size:13px;padding:8px 16px;cursor:pointer;transition:border-color 0.18s;-webkit-tap-highlight-color:transparent;" onmouseover="this.style.borderColor='var(--border-hover)'" onmouseout="this.style.borderColor='var(--border)'">← Yesterday</button>
+        <button onclick="setCalTomorrow()" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font);font-size:13px;padding:8px 16px;cursor:pointer;transition:border-color 0.18s;-webkit-tap-highlight-color:transparent;" onmouseover="this.style.borderColor='var(--border-hover)'" onmouseout="this.style.borderColor='var(--border)'">Tomorrow →</button>
+      </div>
+
+      <!-- Results grid -->
+      <div style="font-family:var(--mono);font-size:10px;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);margin-bottom:12px;">Equivalent Dates</div>
+      <div id="calResults" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;"></div>
+
+      <!-- Day info section -->
+      <div id="calDayInfo" style="margin-top:20px;display:none;">
+        <div style="font-family:var(--mono);font-size:10px;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);margin-bottom:12px;">Day Info</div>
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:18px 20px;">
+          <div id="calDayInfoContent" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;"></div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -764,6 +849,7 @@ function switchTab(tab, btn) {
 
   if (tab === 'converter') initConverter();
   if (tab === 'lookup') initMeetingLookup();
+  if (tab === 'calendar') { const ci = document.getElementById('calInput'); if (ci && !ci.value) setCalToday(); }
   if (tab === 'deskview') enterDeskView(); // immediately go fullscreen
 }
 
@@ -2454,6 +2540,192 @@ window.addEventListener('load', () => {
     if (btn) btn.click();
   }
 })();
+
+  if (tabParam) {
+    const btn = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.getAttribute('onclick') && b.getAttribute('onclick').includes(`'${tabParam}'`));
+    if (btn) btn.click();
+  }
+})();
+
+/* ═══════════════════════════════════════
+   CALENDAR CONVERTER — 11 calendar systems
+   All algorithms from scratch, no library.
+═══════════════════════════════════════ */
+
+function gregorianToJDN(y,m,d){const a=Math.floor((14-m)/12);const yr=y+4800-a;const mo=m+12*a-3;return d+Math.floor((153*mo+2)/5)+365*yr+Math.floor(yr/4)-Math.floor(yr/100)+Math.floor(yr/400)-32045;}
+function jdnToGregorian(jdn){const a=jdn+32044;const b=Math.floor((4*a+3)/146097);const c=a-Math.floor(146097*b/4);const d=Math.floor((4*c+3)/1461);const e=c-Math.floor(1461*d/4);const m2=Math.floor((5*e+2)/153);return{d:e-Math.floor((153*m2+2)/5)+1,m:m2+3-12*Math.floor(m2/10),y:100*b+d-4800+Math.floor(m2/10)};}
+
+/* Hijri */
+function jdnToHijri(jdn){const l=jdn-1948440+10632;const n=Math.floor((l-1)/10631);const ll=l-10631*n+354;const j=Math.floor((10985-ll)/5316)*Math.floor(50*ll/17719)+Math.floor(ll/5670)*Math.floor(43*ll/15238);const lll=ll-Math.floor((30-j)/15)*Math.floor(17719*j/50)-Math.floor(j/16)*Math.floor(15238*j/43)+29;return{y:30*n+j-30,m:Math.floor(24*lll/709),d:lll-Math.floor(709*Math.floor(24*lll/709)/24)};}
+function hijriToJDN(y,m,d){return Math.floor((11*y+3)/30)+354*y+30*m-Math.floor((m-1)/2)+d+1948440-385;}
+const HIJRI_MONTHS=['Muharram','Ṣafar','Rabīʿ al-Awwal','Rabīʿ al-Thānī','Jumādā al-Ūlā','Jumādā al-Thānī','Rajab','Shaʿbān','Ramaḍān','Shawwāl','Dhū al-Qaʿdah','Dhū al-Ḥijjah'];
+
+/* Hebrew */
+function hebrewDelay1(y){const months=Math.floor((235*y-234)/19);const parts=12084+13753*months;let day=months*29+Math.floor(parts/25920);if((3*(day+1))%7<3)day++;return day;}
+function hebrewDelay2(y){const last=hebrewDelay1(y-1);const present=hebrewDelay1(y);const next=hebrewDelay1(y+1);if(next-present===356)return 2;if(present-last===382)return 1;return 0;}
+function hebrewLeapYear(y){return(7*y+1)%19<7;}
+function hebrewLastMonth(y){return hebrewLeapYear(y)?13:12;}
+function hebrewDaysInYear(y){return hebrewToJDN(y+1,7,1)-hebrewToJDN(y,7,1);}
+function hebrewDaysInMonth(m,y){if([1,3,5,7,11,13].includes(m))return 30;if([4,6,10,12].includes(m))return 29;if(m===8)return hebrewDaysInYear(y)%10===5?30:29;if(m===9)return hebrewDaysInYear(y)%10===3?29:30;if(m===2)return hebrewLeapYear(y)?29:0;return 29;}
+function hebrewToJDN(y,m,d){const months=hebrewLastMonth(y);let jdn=347997+hebrewDelay1(y)+hebrewDelay2(y)+d+1;for(let i=7;i<=months;i++)if(i!==m)jdn+=hebrewDaysInMonth(i,y);for(let i=1;i<m;i++)jdn+=hebrewDaysInMonth(i,y);return jdn;}
+function jdnToHebrew(jdn){let year=Math.floor((jdn-347997)/365.25)+1;while(hebrewToJDN(year+1,7,1)<=jdn)year++;let month=jdn<hebrewToJDN(year,1,1)?7:1;while(jdn>=hebrewToJDN(year,month,hebrewDaysInMonth(month,year)))month++;return{y:year,m:month,d:jdn-hebrewToJDN(year,month,1)+1};}
+const HEBREW_MONTHS=['Nisan','Iyyar','Sivan','Tammuz','Av','Elul','Tishri','Marcheshvan','Kislev','Tevet','Shevat','Adar','Adar II'];
+
+/* Persian (Jalali) */
+function persianToJDN(y,m,d){const ep=((y-474)%2820)+474;return 1948319+365*(y-474)+Math.floor((682*ep-110)/2816)+Math.floor(ep/4)+474*365+(m<=6?(m-1)*31:(m-1)*30+6)+d;}
+function jdnToPersian(jdn){let y=Math.floor((jdn-1948320)/365.25)+1;if(jdn<persianToJDN(y,1,1))y--;const doy=jdn-persianToJDN(y,1,1);let m,d;if(doy<6*31){m=Math.floor(doy/31)+1;d=(doy%31)+1;}else{const r=doy-6*31;m=Math.floor(r/30)+7;d=(r%30)+1;}return{y,m,d};}
+const PERSIAN_MONTHS=['Farvardin','Ordibehesht','Khordad','Tir','Mordad','Shahrivar','Mehr','Aban','Azar','Dey','Bahman','Esfand'];
+
+/* Ethiopian */
+function ethiopianToJDN(y,m,d){return 1723856+365*(y-1)+Math.floor(y/4)+30*(m-1)+d-1;}
+function jdnToEthiopian(jdn){const r=(jdn-1723856)%1461;const n=(r%365)+365*Math.floor(r/1460);const y=4*Math.floor((jdn-1723856)/1461)+Math.floor(r/365)-Math.floor(r/1460);return{y,m:Math.min(Math.floor(n/30)+1,13),d:(n%30)+1};}
+const ETHIOPIAN_MONTHS=['Mäskäräm','Ṭəqəmt','Ḫədar','Taḫśaś','Ṭərr','Yäkatit','Mägabit','Miyazya','Gənbot','Säne','Ḥamle','Nähase','Ṗagume'];
+
+/* Coptic */
+function jdnToCoptic(jdn){const r=(jdn-1825030)%1461;const n=(r%365)+365*Math.floor(r/1460);const y=4*Math.floor((jdn-1825030)/1461)+Math.floor(r/365)-Math.floor(r/1460);return{y,m:Math.min(Math.floor(n/30)+1,13),d:(n%30)+1};}
+const COPTIC_MONTHS=['Thout','Paopi','Hathor','Koiak','Tobi','Meshir','Paremhat','Paremoude','Pashons','Paoni','Epep','Mesori','Pi Kogi Enavot'];
+
+/* Julian */
+function jdnToJulian(jdn){const b=jdn+1524;const c=Math.floor((b-122.1)/365.25);const d2=Math.floor(365.25*c);const e=Math.floor((b-d2)/30.6001);const day=b-d2-Math.floor(30.6001*e);const month=e<14?e-1:e-13;return{y:month>2?c-4716:c-4715,m:month,d:day};}
+
+/* Thai Buddhist */
+function jdnToBuddhist(jdn){const g=jdnToGregorian(jdn);return{y:g.y+543,m:g.m,d:g.d};}
+
+/* Japanese Era */
+function jdnToJapanese(jdn){const g=jdnToGregorian(jdn);const eras=[{name:'Reiwa (令和)',start:2019},{name:'Heisei (平成)',start:1989},{name:'Showa (昭和)',start:1926},{name:'Taisho (大正)',start:1912},{name:'Meiji (明治)',start:1868}];for(const e of eras)if(g.y>=e.start)return{era:e.name,y:g.y-e.start+1,m:g.m,d:g.d};return{era:'Pre-Meiji',y:g.y,m:g.m,d:g.d};}
+
+/* Bahá'í */
+const BAHAI_MONTHS=['Bahá','Jalál','Jamál','ʻAẓamat','Núr','Raḥmat','Kalimát','Kamál','Asmáʼ','ʻIzzat','Mashíyyat','ʻIlm','Qudrat','Qawl','Masáʼil','Sharaf','Sulṭán','Mulk','ʻAláʼ'];
+function jdnToBahai(jdn){const g=jdnToGregorian(jdn);let year=g.y-1844;let nrJDN=gregorianToJDN(g.y,3,21);if(jdn<nrJDN){year--;nrJDN=gregorianToJDN(g.y-1,3,21);}const doy=jdn-nrJDN;if(doy>=342)return{y:year+1,m:0,d:doy-342+1,special:'Ayyám-Há'};return{y:year+1,m:Math.floor(doy/19)+1,d:(doy%19)+1};}
+
+const WEEKDAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const WEEKDAYS_AR=['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+const GREG_MONTHS=['','January','February','March','April','May','June','July','August','September','October','November','December'];
+
+function setCalToday(){const t=new Date();setCalDate(t.getFullYear(),t.getMonth()+1,t.getDate());}
+function setCalYesterday(){const j=gregorianToJDN(...todayYMD())-1;const g=jdnToGregorian(j);setCalDate(g.y,g.m,g.d);}
+function setCalTomorrow(){const j=gregorianToJDN(...todayYMD())+1;const g=jdnToGregorian(j);setCalDate(g.y,g.m,g.d);}
+function todayYMD(){const t=new Date();return[t.getFullYear(),t.getMonth()+1,t.getDate()];}
+
+function setCalDate(y,m,d){
+  const inp=document.getElementById('calInput');
+  if(inp) inp.value=`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+  const manDiv=document.getElementById('calManualInput');
+  if(manDiv) manDiv.style.display='none';
+  const sys=document.getElementById('calInputSystem');
+  if(sys) sys.value='gregorian';
+  convertCalendar();
+}
+
+function convertCalendar(){
+  const inp=document.getElementById('calInput');
+  const sys=document.getElementById('calInputSystem');
+  if(!inp||!sys) return;
+  const manDiv=document.getElementById('calManualInput');
+  const hint=document.getElementById('calManHint');
+  if(sys.value!=='gregorian'){
+    if(manDiv) manDiv.style.display='flex';
+    const hints={hijri:'Enter Hijri date (AH)',hebrew:'Enter Hebrew date (AM)',persian:'Enter Solar Hijri / Jalali date (SH)',ethiopian:'Enter Ethiopian date (EC) — 13 months',coptic:'Enter Coptic date (AM) — 13 months'};
+    if(hint) hint.textContent=hints[sys.value]||'';
+    return;
+  }
+  if(manDiv) manDiv.style.display='none';
+  if(!inp.value) return;
+  const [y,m,d]=inp.value.split('-').map(Number);
+  if(!y||!m||!d||isNaN(y)) return;
+  renderCalendarResults(gregorianToJDN(y,m,d));
+}
+
+function convertCalendarManual(){
+  const sys=document.getElementById('calInputSystem')?.value;
+  const day=parseInt(document.getElementById('calManDay')?.value);
+  const month=parseInt(document.getElementById('calManMonth')?.value);
+  const year=parseInt(document.getElementById('calManYear')?.value);
+  if(!day||!month||!year||isNaN(year)) return;
+  let jdn;
+  try{
+    switch(sys){
+      case 'hijri':     jdn=hijriToJDN(year,month,day); break;
+      case 'persian':   jdn=persianToJDN(year,month,day); break;
+      case 'ethiopian': jdn=ethiopianToJDN(year,month,day); break;
+      case 'hebrew':    jdn=hebrewToJDN(year,month,day); break;
+      case 'coptic':    jdn=1825030+365*(year-1)+Math.floor(year/4)+30*(month-1)+day-1; break;
+      default: return;
+    }
+    if(jdn&&!isNaN(jdn)){
+      const g=jdnToGregorian(jdn);
+      const inp=document.getElementById('calInput');
+      if(inp) inp.value=`${g.y}-${String(g.m).padStart(2,'0')}-${String(g.d).padStart(2,'0')}`;
+      renderCalendarResults(jdn);
+    }
+  }catch(e){/* ignore invalid combos */}
+}
+
+function renderCalendarResults(jdn){
+  const g=jdnToGregorian(jdn);
+  const hj=jdnToHijri(jdn);
+  const hb=jdnToHebrew(jdn);
+  const pr=jdnToPersian(jdn);
+  const et=jdnToEthiopian(jdn);
+  const co=jdnToCoptic(jdn);
+  const ju=jdnToJulian(jdn);
+  const bu=jdnToBuddhist(jdn);
+  const ja=jdnToJapanese(jdn);
+  const bh=jdnToBahai(jdn);
+  const dow=(jdn+1)%7;
+  const pad=n=>String(n).padStart(2,'0');
+
+  const cards=[
+    {name:'Gregorian (CE)',flag:'🌍',date:`${g.d} ${GREG_MONTHS[g.m]} ${g.y}`,sub:`${WEEKDAYS[dow]} · ${g.y}-${pad(g.m)}-${pad(g.d)}`,primary:true},
+    {name:'Hijri (Islamic)',flag:'☪️',date:`${hj.d} ${HIJRI_MONTHS[hj.m-1]||''} ${hj.y} AH`,sub:`${WEEKDAYS_AR[dow]} — Lunar calendar`},
+    {name:'Persian Solar Hijri',flag:'🇮🇷',date:`${pr.d} ${PERSIAN_MONTHS[(pr.m-1)%12]||''} ${pr.y} SH`,sub:'Jalali · Iran & Afghanistan'},
+    {name:'Hebrew (Jewish)',flag:'✡️',date:`${hb.d} ${HEBREW_MONTHS[(hb.m-1)%13]||''} ${hb.y} AM`,sub:`Anno Mundi · ${hebrewLeapYear(hb.y)?'Leap (13 months)':'Regular (12 months)'}`},
+    {name:'Ethiopian',flag:'🇪🇹',date:`${et.d} ${ETHIOPIAN_MONTHS[(et.m-1)%13]||''} ${et.y} EC`,sub:"Ge'ez · ~7–8 years behind Gregorian"},
+    {name:'Coptic',flag:'✝️',date:`${co.d} ${COPTIC_MONTHS[(co.m-1)%13]||''} ${co.y} AM`,sub:'Coptic Orthodox Church'},
+    {name:'Thai Buddhist',flag:'🇹🇭',date:`${bu.d} ${GREG_MONTHS[bu.m]} ${bu.y} BE`,sub:'Buddhist Era · Gregorian +543'},
+    {name:'Japanese Era',flag:'🇯🇵',date:`${ja.era} ${ja.y}, ${GREG_MONTHS[ja.m]} ${ja.d}`,sub:'Imperial Japanese calendar'},
+    {name:"Bahá'í",flag:'⭐',date:bh.special?`${bh.d} ${bh.special} ${bh.y} BE`:`${bh.d} ${BAHAI_MONTHS[(bh.m-1)%19]||''} ${bh.y} BE`,sub:"Badíʻ · 19 months × 19 days"},
+    {name:'Julian (Old Style)',flag:'🏛️',date:`${ju.d} ${GREG_MONTHS[ju.m]||''} ${ju.y} OS`,sub:`Julian Day No. ${jdn}`},
+    {name:'Unix Timestamp',flag:'💻',date:`${Math.floor((jdn-2440588)*86400)}`,sub:'Seconds since 1 Jan 1970 UTC'},
+  ];
+
+  const grid=document.getElementById('calResults');
+  if(!grid) return;
+  grid.innerHTML=cards.map(c=>`
+    <div class="cal-card${c.primary?' primary':''}">
+      <div class="cal-card-flag">${c.flag}</div>
+      <div class="cal-card-name">${c.name}</div>
+      <div class="cal-card-date">${c.date}</div>
+      <div class="cal-card-sub">${c.sub}</div>
+      <button onclick="navigator.clipboard?.writeText('${c.date.replace(/'/g,"\\\\'")}').then(()=>showToast('Copied!'))"
+        style="margin-top:6px;background:none;border:none;color:var(--muted);font-size:11px;font-family:var(--mono);cursor:pointer;padding:2px 6px;border-radius:4px;transition:color 0.15s;"
+        onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--muted)'">📋 copy</button>
+    </div>`).join('');
+
+  const isLeap=(g.y%4===0&&g.y%100!==0)||g.y%400===0;
+  const doy=jdn-gregorianToJDN(g.y,1,1)+1;
+  const rem=(isLeap?366:365)-doy;
+  const wk=Math.ceil((doy+new Date(g.y,0,1).getDay())/7);
+  const todayJDN=gregorianToJDN(...todayYMD());
+  const diff=jdn-todayJDN;
+  const diffStr=diff===0?'Today':diff>0?`+${diff} days`:`${diff} days`;
+
+  const infoEl=document.getElementById('calDayInfo');
+  const infoCt=document.getElementById('calDayInfoContent');
+  if(infoEl&&infoCt){
+    infoEl.style.display='block';
+    infoCt.innerHTML=[
+      {label:'Day of Week',value:WEEKDAYS[dow]},
+      {label:'Day of Year',value:`${doy} of ${isLeap?366:365}`},
+      {label:'Days Remaining',value:`${rem} days left`},
+      {label:'ISO Week',value:`Week ${wk}`},
+      {label:'Gregorian Leap',value:isLeap?'✓ Leap year':'✗ Regular year'},
+      {label:'Hijri Leap',value:[2,5,7,10,13,16,18,21,24,26,29].includes(hj.y%30)?'✓ Hijri leap year':'✗ Hijri regular year'},
+      {label:'Julian Day No.',value:jdn},
+      {label:'Days from Today',value:diffStr},
+    ].map(item=>`<div class="cal-info-item"><div class="cal-info-label">${item.label}</div><div class="cal-info-value">${item.value}</div></div>`).join('');
+  }
+}
 
 /* ═══════════════════════════════════════
    INSTALL POPUP
