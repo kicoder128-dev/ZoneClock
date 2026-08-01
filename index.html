@@ -38,8 +38,6 @@
 <meta property="og:description" content="Live world clocks, alarms, and time zone converter.">
 <meta property="og:type" content="website">
 
-<!-- Supabase SDK -->
-<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <!-- Fonts -->
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -205,37 +203,6 @@
   .modal-overlay.show { display:flex; }
   .modal { background:var(--surface2); border:1px solid rgba(200,240,96,0.18); border-radius:22px; padding:36px 28px; max-width:420px; width:100%; animation:popIn 0.3s cubic-bezier(0.34,1.56,0.64,1); }
   @keyframes popIn { from{opacity:0;transform:scale(0.86)} to{opacity:1;transform:none} }
-  /* ── CALENDAR CONVERTER ── */
-  .cal-card {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 16px 18px;
-    transition: border-color 0.18s;
-    position: relative;
-  }
-  .cal-card:hover { border-color: var(--border-hover); }
-  .cal-card.primary { border-color: rgba(200,240,96,0.3); background: rgba(200,240,96,0.04); }
-  .cal-card-name {
-    font-size: 11px; font-weight: 700; font-family: var(--mono);
-    letter-spacing: 1px; text-transform: uppercase;
-    color: var(--muted); margin-bottom: 6px;
-  }
-  .cal-card.primary .cal-card-name { color: var(--accent); }
-  .cal-card-date {
-    font-size: 17px; font-weight: 700; color: var(--text);
-    letter-spacing: -0.3px; margin-bottom: 4px; line-height: 1.2;
-  }
-  .cal-card-sub {
-    font-family: var(--mono); font-size: 11px; color: var(--muted);
-  }
-  .cal-card-flag {
-    position: absolute; top: 12px; right: 14px; font-size: 18px;
-  }
-  .cal-info-item { display: flex; flex-direction: column; gap: 3px; }
-  .cal-info-label { font-family: var(--mono); font-size: 10px; color: var(--muted); letter-spacing: 0.5px; text-transform: uppercase; }
-  .cal-info-value { font-size: 14px; font-weight: 600; color: var(--text); }
-
   .modal-icon { font-size:32px; margin-bottom:16px; }
   .modal h2 { font-size:22px; font-weight:800; margin-bottom:8px; }
   .modal h2 span { color:var(--accent); }
@@ -355,155 +322,28 @@
     .alarm-overlay-dismiss { font-size: 16px; padding: 16px 40px; }
   }
 
-  /* ── DESK VIEW (fullscreen overlay) ── */
-  #deskViewGrid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-    gap: 18px;
+  @media (min-width: 541px) and (max-width: 640px) {
+    .app { padding: 24px 18px 70px; }
+    .clock-card { padding: 16px 18px; gap: 12px; }
+    .clock-time { font-size: 26px; }
+    .tab-text { display: none; }
   }
-  .desk-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    padding: 24px 20px 20px;
-    display: flex; flex-direction: column; align-items: center;
-    gap: 10px; position: relative; overflow: hidden;
-    transition: border-color 0.2s, transform 0.15s;
-  }
-  .desk-card:hover { border-color: var(--border-hover); transform: translateY(-2px); }
-  .desk-card::before {
-    content:''; position:absolute; top:0; left:0; right:0; height:3px;
-    background:var(--accent2); border-radius:20px 20px 0 0;
-  }
-  .desk-card.home-card::before { background:var(--accent); }
-  .desk-city {
-    font-size:15px; font-weight:700; color:var(--text);
-    text-align:center; white-space:nowrap; overflow:hidden;
-    text-overflow:ellipsis; width:100%;
-    display:flex; align-items:center; justify-content:center; gap:6px;
-  }
-  .desk-tz { font-family:var(--mono); font-size:10px; color:var(--muted); text-align:center; }
-  .desk-analog { flex-shrink:0; }
-  .desk-analog svg { display:block; }
-  .desk-time {
-    font-family:var(--mono); font-weight:300;
-    letter-spacing:-1.5px; text-align:center; line-height:1;
-  }
-  .desk-time .desk-secs { color:var(--muted); }
-  .desk-time .desk-ampm { color:var(--muted); margin-left:3px; }
-  .desk-date { font-family:var(--mono); font-size:11px; color:var(--muted); text-align:center; }
-  .desk-offset { font-family:var(--mono); font-size:10px; color:var(--muted); text-align:center; opacity:0.65; }
-  .desk-day-badge {
-    position:absolute; top:14px; right:14px;
-    font-family:var(--mono); font-size:9px; color:var(--accent2);
-    letter-spacing:0.5px; text-transform:uppercase;
-  }
-  .desk-card.home-card .desk-day-badge { color:var(--accent); }
-
-  @media (max-width: 540px) {
-    #deskViewGrid { grid-template-columns: repeat(2, 1fr); gap:10px; padding:0 12px 32px !important; }
-    .desk-card { padding:14px 10px 12px; border-radius:14px; gap:7px; }
-    .desk-city { font-size:12px; }
-    .desk-date { font-size:10px; }
-  }
-  @media (min-width: 900px) {
-    #deskViewGrid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap:20px; }
-  }
-  @media (min-width: 1200px) {
-    #deskViewGrid { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap:24px; }
-    .desk-card { padding:28px 24px 22px; }
-  }
-
-  /* ── LOGIN MODAL ── */
-  .login-overlay {
-    position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:600;
-    display:none;align-items:center;justify-content:center;padding:20px;
-    backdrop-filter:blur(8px);
-  }
-  .login-overlay.show { display:flex; }
-  .login-box {
-    background:var(--surface2);border:1px solid rgba(200,240,96,0.2);
-    border-radius:22px;padding:36px 32px;max-width:380px;width:100%;
-    animation:popIn 0.3s cubic-bezier(0.34,1.56,0.64,1);
-  }
-  .login-box h2 { font-size:22px;font-weight:800;margin-bottom:4px; }
-  .login-box h2 span { color:var(--accent); }
-  .login-box p { font-size:13px;color:var(--muted);margin-bottom:24px;line-height:1.5; }
-  .login-field { margin-bottom:14px; }
-  .login-field label { font-family:var(--mono);font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:6px; }
-  .login-input {
-    width:100%;background:var(--surface);border:1px solid var(--border);border-radius:10px;
-    color:var(--text);font-family:var(--font);font-size:15px;padding:12px 14px;
-    outline:none;transition:border-color 0.2s;-webkit-appearance:none;
-  }
-  .login-input:focus { border-color:rgba(200,240,96,0.4); }
-  .login-error { font-size:13px;color:var(--danger);margin-bottom:12px;display:none;padding:8px 12px;background:rgba(240,96,96,0.08);border-radius:8px;border:1px solid rgba(240,96,96,0.2); }
-  .login-error.show { display:block; }
-  .login-submit {
-    width:100%;padding:14px;background:var(--accent);color:#0a0a0f;border:none;
-    border-radius:12px;font-family:var(--font);font-weight:800;font-size:15px;
-    cursor:pointer;transition:opacity 0.18s;margin-bottom:12px;
-    -webkit-tap-highlight-color:transparent;touch-action:manipulation;
-  }
-  .login-submit:hover { opacity:0.85; }
-  .login-cancel { display:block;text-align:center;font-size:13px;color:var(--muted);cursor:pointer;padding:6px; }
-  .login-cancel:hover { color:var(--text); }
-
-  /* ── INSTALL PROMPT ── */
-  .install-overlay {
-    position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:550;
-    display:none;align-items:flex-end;justify-content:center;padding:0;
-    backdrop-filter:blur(4px);
-  }
-  .install-overlay.show { display:flex; }
-  .install-sheet {
-    background:var(--surface2);border:1px solid rgba(200,240,96,0.15);
-    border-radius:24px 24px 0 0;padding:28px 24px calc(28px + env(safe-area-inset-bottom,0px));
-    width:100%;max-width:600px;
-    animation:sheetUp 0.35s cubic-bezier(0.34,1.2,0.64,1);
-  }
-  @keyframes sheetUp { from{transform:translateY(100%)} to{transform:none} }
-  .install-sheet h3 { font-size:19px;font-weight:800;margin-bottom:6px;display:flex;align-items:center;gap:10px; }
-  .install-sheet p { font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:20px; }
-  .install-steps { display:flex;flex-direction:column;gap:10px;margin-bottom:22px; }
-  .install-step { display:flex;align-items:center;gap:14px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 16px; }
-  .install-step-num { width:28px;height:28px;border-radius:50%;background:rgba(200,240,96,0.12);border:1px solid rgba(200,240,96,0.3);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:12px;color:var(--accent);font-weight:700;flex-shrink:0; }
-  .install-step-text { font-size:13px;line-height:1.4; }
-  .install-step-text strong { color:var(--text); }
-  .install-step-text span { color:var(--muted); }
-  .install-action-btn {
-    width:100%;padding:15px;background:var(--accent);color:#0a0a0f;border:none;
-    border-radius:13px;font-family:var(--font);font-weight:800;font-size:15px;
-    cursor:pointer;margin-bottom:10px;-webkit-tap-highlight-color:transparent;touch-action:manipulation;
-    transition:opacity 0.18s;
-  }
-  .install-action-btn:hover { opacity:0.88; }
-  .install-dismiss { display:block;text-align:center;font-size:13px;color:var(--muted);cursor:pointer;padding:6px; }
-  .install-dismiss:hover { color:var(--text); }
-
-  </style>
+</style>
 </head>
 <body>
 <div class="grid-bg"></div>
 <div class="app">
   <div class="header">
     <div class="logo">
-      <div style="position:relative;flex-shrink:0;">
-        <img src="icon-192.png" alt="ZoneClock" style="width:36px;height:36px;border-radius:9px;object-fit:cover;display:block;box-shadow:0 0 0 1.5px rgba(200,240,96,0.3),0 0 12px rgba(200,240,96,0.15);">
-        <div style="position:absolute;bottom:-2px;right:-2px;width:9px;height:9px;border-radius:50%;background:var(--accent);box-shadow:0 0 6px var(--accent);border:1.5px solid var(--bg);animation:pulse 2s ease-in-out infinite;"></div>
-      </div>
-      <div>
-        <div style="font-size:18px;font-weight:800;letter-spacing:-0.5px;line-height:1.1;">Zone<span style="color:var(--accent);">Clock</span></div>
-        <div style="font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;line-height:1;">World Time</div>
-      </div>
+      <img src="icon-192.png" alt="ZoneClock" style="width:40px;height:40px;border-radius:10px;object-fit:cover;flex-shrink:0;">
+      <div class="logo-text">Zone<span>Clock</span></div>
     </div>
     <div class="header-controls">
       <div class="toggle-wrap">
         <button class="toggle-btn active" id="btn12" onclick="setFormat(12)">12h</button>
         <button class="toggle-btn" id="btn24" onclick="setFormat(24)">24h</button>
       </div>
-      <button id="loginBtn" onclick="openLoginModal()" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--muted);font-family:var(--mono);font-size:10px;padding:6px 12px;cursor:pointer;letter-spacing:0.5px;-webkit-tap-highlight-color:transparent;touch-action:manipulation;transition:color 0.18s,border-color 0.18s;">LOGIN</button>
-      <div class="plan-badge" id="planBadge">FREE</div>
+      <div class="plan-badge" id="planBadge">FREE PLAN</div>
     </div>
   </div>
 
@@ -514,7 +354,7 @@
     <button class="tab-btn" onclick="switchTab('converter', this)"><span class="tab-icon">🔄</span><span class="tab-text">Converter</span></button>
     <button class="tab-btn" onclick="switchTab('lookup', this)"><span class="tab-icon">🔍</span><span class="tab-text">Lookup</span></button>
     <button class="tab-btn" onclick="switchTab('calendar', this)"><span class="tab-icon">📅</span><span class="tab-text">Calendar</span></button>
-    <button class="tab-btn" onclick="switchTab('deskview', this)"><span class="tab-icon">🖥️</span><span class="tab-text">Desk View</span></button>
+    <button class="tab-btn" onclick="switchTab('deskview', this)"><span class="tab-icon">🖥️</span><span class="tab-text">Desk</span></button>
   </div>
 
   <!-- Live World Bar -->
@@ -525,7 +365,7 @@
 
   <!-- Limit Banner -->
   <div class="limit-notice" id="limitNotice">
-    <span>⚠️ You reached the free limit of 2 clocks.</span>
+    <span>⚠️ Free plan limited to 2 clocks.</span>
     <span class="upgrade-link" onclick="openPremiumModal()">Upgrade to Premium</span>
   </div>
   
@@ -551,9 +391,6 @@
 
   <!-- ALARMS PANEL -->
   <div id="panel-alarms" class="tab-panel">
-    <div id="iosAlarmWarning" style="display:none;background:rgba(240,160,96,0.08);border:1px solid rgba(240,160,96,0.25);border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:12px;line-height:1.5;color:var(--warn);">
-      <strong>⚠️ iOS limitation:</strong> Safari pauses alarms when ZoneClock is in the background or the screen is locked. For reliable alarms, <strong>keep this tab open and your screen on</strong>, or add ZoneClock to your Home Screen and keep it running in the foreground.
-    </div>
     <div class="alarm-add-row">
       <select class="alarm-select" id="alarmZoneSelect"></select>
       <input type="time" class="alarm-time-input" id="alarmTimeInput">
@@ -613,55 +450,43 @@
     </div>
   </div>
 
-  <!-- ══════════════════════════════════════
-       CALENDAR CONVERTER PANEL
-  ══════════════════════════════════════ -->
+
+  <!-- CALENDAR CONVERTER PANEL -->
   <div id="panel-calendar" class="tab-panel">
     <div class="converter-box">
       <h3><span class="ch-icon">📅</span> Calendar Converter</h3>
-      <p style="font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.6;">Convert any date between the world's major calendar systems.</p>
-
-      <!-- Date input row -->
-      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:18px 20px;margin-bottom:20px;">
-        <div style="font-family:var(--mono);font-size:9px;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);margin-bottom:12px;">Input Date</div>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+      <p style="font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.6;">Convert any date between 11 major calendar systems worldwide.</p>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:18px 20px;margin-bottom:16px;">
+        <div style="font-family:var(--mono);font-size:9px;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">Input Date</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
           <input type="date" id="calInput" class="conv-input" style="flex:1;min-width:160px;" oninput="convertCalendar()"/>
           <select id="calInputSystem" class="conv-select" style="flex:1;min-width:160px;" onchange="convertCalendar()">
             <option value="gregorian">Gregorian (CE)</option>
-            <option value="hijri">Hijri (Islamic)</option>
-            <option value="hebrew">Hebrew</option>
-            <option value="persian">Persian (Solar Hijri)</option>
-            <option value="ethiopian">Ethiopian</option>
-            <option value="coptic">Coptic</option>
+            <option value="hijri">Hijri (Islamic) →</option>
+            <option value="persian">Persian / Jalali →</option>
+            <option value="hebrew">Hebrew (Jewish) →</option>
+            <option value="ethiopian">Ethiopian →</option>
+            <option value="coptic">Coptic →</option>
           </select>
         </div>
-        <!-- Manual day/month/year for non-Gregorian input -->
-        <div id="calManualInput" style="display:none;margin-top:12px;display:none;">
-          <div style="display:flex;gap:8px;flex-wrap:wrap;">
-            <input type="number" id="calManDay"   placeholder="Day"   min="1" max="30" class="conv-input" style="flex:1;min-width:70px;" oninput="convertCalendarManual()"/>
-            <input type="number" id="calManMonth" placeholder="Month" min="1" max="13" class="conv-input" style="flex:1;min-width:70px;" oninput="convertCalendarManual()"/>
-            <input type="number" id="calManYear"  placeholder="Year"  class="conv-input" style="flex:1;min-width:100px;" oninput="convertCalendarManual()"/>
-          </div>
-          <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:6px;" id="calManHint"></div>
+        <div id="calManualInput" style="display:none;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
+          <input type="number" id="calManDay" placeholder="Day" min="1" max="30" class="conv-input" style="flex:1;min-width:70px;" oninput="convertCalendarManual()"/>
+          <input type="number" id="calManMonth" placeholder="Month" min="1" max="13" class="conv-input" style="flex:1;min-width:70px;" oninput="convertCalendarManual()"/>
+          <input type="number" id="calManYear" placeholder="Year" class="conv-input" style="flex:1;min-width:100px;" oninput="convertCalendarManual()"/>
+          <div id="calManHint" style="width:100%;font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:4px;"></div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button onclick="setCalToday()" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font);font-size:13px;padding:8px 14px;cursor:pointer;-webkit-tap-highlight-color:transparent;">📌 Today</button>
+          <button onclick="setCalYesterday()" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font);font-size:13px;padding:8px 14px;cursor:pointer;-webkit-tap-highlight-color:transparent;">← Yesterday</button>
+          <button onclick="setCalTomorrow()" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font);font-size:13px;padding:8px 14px;cursor:pointer;-webkit-tap-highlight-color:transparent;">Tomorrow →</button>
         </div>
       </div>
-
-      <!-- Today shortcut -->
-      <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;">
-        <button onclick="setCalToday()" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font);font-size:13px;padding:8px 16px;cursor:pointer;transition:border-color 0.18s;-webkit-tap-highlight-color:transparent;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">📌 Today</button>
-        <button onclick="setCalYesterday()" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font);font-size:13px;padding:8px 16px;cursor:pointer;transition:border-color 0.18s;-webkit-tap-highlight-color:transparent;" onmouseover="this.style.borderColor='var(--border-hover)'" onmouseout="this.style.borderColor='var(--border)'">← Yesterday</button>
-        <button onclick="setCalTomorrow()" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font);font-size:13px;padding:8px 16px;cursor:pointer;transition:border-color 0.18s;-webkit-tap-highlight-color:transparent;" onmouseover="this.style.borderColor='var(--border-hover)'" onmouseout="this.style.borderColor='var(--border)'">Tomorrow →</button>
-      </div>
-
-      <!-- Results grid -->
       <div style="font-family:var(--mono);font-size:10px;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);margin-bottom:12px;">Equivalent Dates</div>
-      <div id="calResults" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;"></div>
-
-      <!-- Day info section -->
+      <div id="calResults" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(185px,1fr));gap:12px;"></div>
       <div id="calDayInfo" style="margin-top:20px;display:none;">
-        <div style="font-family:var(--mono);font-size:10px;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);margin-bottom:12px;">Day Info</div>
-        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:18px 20px;">
-          <div id="calDayInfoContent" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;"></div>
+        <div style="font-family:var(--mono);font-size:10px;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">Day Information</div>
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:16px 18px;">
+          <div id="calDayInfoContent" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;"></div>
         </div>
       </div>
     </div>
@@ -669,29 +494,29 @@
 
   <!-- DESK VIEW PANEL -->
   <div id="panel-deskview" class="tab-panel">
-    <!-- This panel is invisible — switching to this tab immediately opens fullscreen overlay -->
+    <div style="text-align:center;padding:60px 20px 40px;">
+      <div style="font-size:48px;margin-bottom:16px;">🖥️</div>
+      <div style="font-size:18px;font-weight:700;margin-bottom:8px;">Desk View</div>
+      <p style="font-size:14px;color:var(--muted);line-height:1.6;margin-bottom:24px;">Full-screen clock display for all your zones.<br>Perfect for a second monitor or tablet.</p>
+      <button onclick="enterDeskView()" style="background:var(--accent);color:#0a0a0f;border:none;border-radius:12px;font-family:var(--font);font-weight:700;font-size:16px;padding:14px 32px;cursor:pointer;-webkit-tap-highlight-color:transparent;">▶ Enter Desk View</button>
+    </div>
   </div>
 
 </div>
 
-<!-- FULLSCREEN DESK VIEW -->
-<div id="deskViewOverlay" style="display:none;position:fixed;inset:0;z-index:800;background:var(--bg);overflow:hidden;width:100vw;height:100vh;height:100dvh;">
-  <!-- Top bar — minimal, fades out after 3s of inactivity -->
-  <div id="deskViewBar" style="display:flex;align-items:center;justify-content:space-between;padding:max(14px,env(safe-area-inset-top,14px)) 20px 12px;position:absolute;top:0;left:0;right:0;z-index:2;background:linear-gradient(rgba(10,10,15,0.92),rgba(10,10,15,0.4),transparent);transition:opacity 0.4s;">
+<!-- DESK VIEW FULLSCREEN OVERLAY -->
+<div id="deskOverlay" style="display:none;position:fixed;inset:0;z-index:900;background:var(--bg);overflow:hidden;">
+  <div id="deskBar" style="position:absolute;top:0;left:0;right:0;z-index:2;display:flex;align-items:center;justify-content:space-between;padding:max(14px,env(safe-area-inset-top,14px)) 20px 12px;background:linear-gradient(rgba(10,10,15,0.95),transparent);transition:opacity 0.4s;">
     <div style="display:flex;align-items:center;gap:8px;">
-      <img src="icon-192.png" style="width:28px;height:28px;border-radius:7px;">
-      <span style="font-size:14px;font-weight:700;color:var(--text);">Zone<span style="color:var(--accent);">Clock</span></span>
-      <div class="logo-dot" style="width:7px;height:7px;"></div>
+      <img src="icon-192.png" style="width:28px;height:28px;border-radius:7px;object-fit:cover;">
+      <span style="font-size:14px;font-weight:700;">Zone<span style="color:var(--accent);">Clock</span></span>
     </div>
-    <div style="display:flex;align-items:center;gap:10px;">
-      <div id="deskViewTime" style="font-family:var(--mono);font-size:11px;color:var(--muted);"></div>
-      <button onclick="exitDeskView()" style="background:rgba(255,255,255,0.1);border:1px solid var(--border-hover);border-radius:8px;color:var(--text);font-family:var(--font);font-weight:600;font-size:13px;padding:7px 16px;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;transition:background 0.18s;">
-        ✕ Exit
-      </button>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <span id="deskHomeTime" style="font-family:var(--mono);font-size:12px;color:var(--muted);"></span>
+      <button onclick="exitDeskView()" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:8px;color:var(--text);font-family:var(--font);font-weight:600;font-size:13px;padding:7px 16px;cursor:pointer;">✕ Exit</button>
     </div>
   </div>
-  <!-- Clock grid — positioned below bar, respects iOS safe-area -->
-  <div id="deskViewGrid" style="position:absolute;left:0;right:0;bottom:0;display:grid;"></div>
+  <div id="deskGrid" style="position:absolute;left:0;right:0;bottom:0;display:grid;overflow:hidden;"></div>
 </div>
 
 <!-- MODALS & OVERLAYS -->
@@ -699,33 +524,14 @@
   <div class="modal">
     <div class="modal-icon">🚀</div>
     <h2>ZoneClock <span>Premium</span></h2>
-    <p>Unlock the full experience — unlimited clocks, desk view, unlimited alarms, and sync across all your devices.</p>
+    <p>Unlock ultimate precision monitoring with seamless tracking across thousands of locations without limits.</p>
     <ul class="modal-features">
-      <li><div class="feat-check">✓</div> Unlimited time zones</li>
-      <li><div class="feat-check">✓</div> Unlimited alarms across any timezone</li>
-      <li><div class="feat-check">✓</div> Full-screen Desk View with luxury watch faces</li>
-      <li><div class="feat-check">✓</div> Sync premium status across devices</li>
-      <li><div class="feat-check">✓</div> Works offline — full PWA support</li>
+      <li><div class="feat-check">✓</div> Track infinite simultaneous cities</li>
+      <li><div class="feat-check">✓</div> Advanced high-integrity notification rules</li>
+      <li><div class="feat-check">✓</div> Absolute standalone persistent offline cache</li>
     </ul>
-    <div class="modal-price"><span class="amount">$5</span><span class="period">/ month</span></div>
-
-    <!-- Email input for Stripe checkout -->
-    <div id="checkoutEmailWrap" style="margin-bottom:14px;">
-      <input id="checkoutEmail" type="email" placeholder="Your email address"
-        style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:10px;
-               color:var(--text);font-family:var(--font);font-size:14px;padding:12px 16px;
-               outline:none;transition:border-color 0.2s;"
-        onfocus="this.style.borderColor='rgba(255,255,255,0.2)'"
-        onblur="this.style.borderColor='var(--border)'"
-        onkeydown="if(event.key==='Enter')startCheckout()"/>
-    </div>
-    <div id="checkoutError" style="color:var(--danger);font-size:12px;margin-bottom:10px;display:none;"></div>
-    <button class="modal-cta" id="checkoutBtn" onclick="startCheckout()">
-      🔒 Subscribe — $5/month
-    </button>
-    <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:10px;">
-      Secure payment via Stripe · Cancel anytime
-    </div>
+    <div class="modal-price"><span class="amount">$2.99</span><span class="period">/ lifetime</span></div>
+    <button class="modal-cta" onclick="upgradeToPremium()">Unlock Lifetime Access</button>
     <span class="modal-close" onclick="closePremiumModal()">Maybe Later</span>
   </div>
 </div>
@@ -742,26 +548,6 @@
     </div>
     <div class="home-zone-list" id="homeZoneListContainer"></div>
     <span class="home-modal-cancel" onclick="closeHomeModal()">Cancel</span>
-  </div>
-</div>
-
-<!-- LOGIN MODAL -->
-<div class="login-overlay" id="loginOverlay">
-  <div class="login-box">
-    <div style="font-size:28px;margin-bottom:12px;">🔐</div>
-    <h2>Sign in to <span>Premium</span></h2>
-    <p>Enter your ZoneClock premium credentials to unlock unlimited clocks and features.</p>
-    <div class="login-field">
-      <label>Username</label>
-      <input class="login-input" type="text" id="loginUser" placeholder="your username" autocomplete="username" autocapitalize="none"/>
-    </div>
-    <div class="login-field">
-      <label>Password</label>
-      <input class="login-input" type="password" id="loginPass" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')submitLogin()"/>
-    </div>
-    <div class="login-error" id="loginError">Incorrect username or password.</div>
-    <button class="login-submit" onclick="submitLogin()">Sign In</button>
-    <span class="login-cancel" onclick="closeLoginModal()">Cancel</span>
   </div>
 </div>
 
@@ -807,21 +593,15 @@ let hourFormat = parseInt(localStorage.getItem('zc_format')) || 12;
 
 let userZones = (() => {
   const saved = JSON.parse(localStorage.getItem('zc_user_zones'));
+  const prem = localStorage.getItem('zc_premium') === 'true';
   if (saved && saved.length > 0) {
-    // Hard-enforce free limit on load — trim if not premium and over limit
-    return (!isPremium && saved.length > FREE_LIMIT) ? saved.slice(0, FREE_LIMIT) : saved;
+    return (!prem && saved.length > 2) ? saved.slice(0, 2) : saved;
   }
-  // Auto-detect home timezone
   const homeTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const homeLabel = homeTz.split('/').pop().replace(/_/g,' ');
-  const secondMap = {
-    'America': 'Europe/London', 'Europe': 'America/New_York',
-    'Asia': 'Europe/London', 'Africa': 'Europe/London',
-    'Pacific': 'America/Los_Angeles', 'Australia': 'Asia/Tokyo'
-  };
-  const region = homeTz.split('/')[0];
-  const secondTz = secondMap[region] || 'America/New_York';
-  const secondLabel = secondTz.split('/').pop().replace(/_/g,' ');
+  const homeLabel = homeTz.split('/').pop().replace(/_/g, ' ');
+  const map = { America: 'Europe/London', Europe: 'America/New_York', Asia: 'Europe/London', Africa: 'Europe/London', Pacific: 'America/Los_Angeles', Australia: 'Asia/Tokyo' };
+  const secondTz = map[homeTz.split('/')[0]] || 'America/New_York';
+  const secondLabel = secondTz.split('/').pop().replace(/_/g, ' ');
   return [
     { label: homeLabel, tz: homeTz, home: true },
     { label: secondLabel, tz: secondTz, home: false }
@@ -839,476 +619,16 @@ function saveZones() { localStorage.setItem('zc_user_zones', JSON.stringify(user
 function saveAlarms() { localStorage.setItem('zc_alarms', JSON.stringify(alarms)); }
 
 function switchTab(tab, btn) {
-  // Exit desk view if leaving it
-  if (deskViewActive && tab !== 'deskview') exitDeskView();
-
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('panel-' + tab).classList.add('active');
-  btn.classList.add('active');
-
+  const panel = document.getElementById('panel-' + tab);
+  if (panel) panel.classList.add('active');
+  if (btn) btn.classList.add('active');
   if (tab === 'converter') initConverter();
   if (tab === 'lookup') initMeetingLookup();
   if (tab === 'calendar') { const ci = document.getElementById('calInput'); if (ci && !ci.value) setCalToday(); }
-  if (tab === 'deskview') enterDeskView(); // immediately go fullscreen
+  if (tab === 'deskview') { /* launch button inside panel */ }
 }
-
-/* ── DESK VIEW ── */
-/* ═══════════════════════════════════════
-   DESK VIEW — fullscreen overlay
-═══════════════════════════════════════ */
-let deskViewActive = false;
-let deskBarTimer = null;
-
-function enterDeskView() {
-  deskViewActive = true;
-  const overlay = document.getElementById('deskViewOverlay');
-  overlay.style.display = 'block';
-
-  // Try native fullscreen
-  if (overlay.requestFullscreen) overlay.requestFullscreen().catch(() => {});
-  else if (overlay.webkitRequestFullscreen) overlay.webkitRequestFullscreen();
-
-  document.body.style.overflow = 'hidden';
-  layoutDeskGrid();
-  renderDeskView();
-  startDeskBarAutoHide();
-  overlay.addEventListener('pointerdown', deskBarTap);
-}
-
-function layoutDeskGrid() {
-  const grid = document.getElementById('deskViewGrid');
-  const bar  = document.getElementById('deskViewBar');
-  if (!grid) return;
-  const n = userZones.length;
-  if (n === 0) return;
-
-  // Measure bar height after any pending reflow
-  requestAnimationFrame(() => {
-    const barH = bar ? bar.getBoundingClientRect().height : 60;
-    const vw   = window.innerWidth;
-    const vh   = window.innerHeight - barH;
-
-    // Position grid below bar
-    grid.style.top    = barH + 'px';
-    grid.style.bottom = '0';
-    grid.style.left   = '0';
-    grid.style.right  = '0';
-
-    // Pick best column/row layout to fill the space
-    let bestCols = 1, bestCellScore = 0;
-    for (let cols = 1; cols <= n; cols++) {
-      const rows    = Math.ceil(n / cols);
-      const cellW   = vw   / cols;
-      const cellH   = vh   / rows;
-      const score   = Math.min(cellW, cellH);
-      if (score > bestCellScore) { bestCellScore = score; bestCols = cols; }
-    }
-    const bestRows = Math.ceil(n / bestCols);
-
-    grid.style.gridTemplateColumns = `repeat(${bestCols}, 1fr)`;
-    grid.style.gridTemplateRows    = `repeat(${bestRows}, 1fr)`;
-    grid.style.gap                 = '1px';
-    grid.style.overflow            = 'hidden';
-    grid.dataset.cols = bestCols;
-    grid.dataset.rows = bestRows;
-    grid.dataset.cellW = Math.floor(vw / bestCols);
-    grid.dataset.cellH = Math.floor(vh / bestRows);
-
-    // Force re-render now that dimensions are known
-    grid.innerHTML = '';
-    renderDeskView();
-  });
-}
-
-function deskBarTap() {
-  const bar = document.getElementById('deskViewBar');
-  if (bar) { bar.style.opacity = '1'; bar.style.pointerEvents = 'auto'; }
-  startDeskBarAutoHide();
-}
-
-function startDeskBarAutoHide() {
-  clearTimeout(deskBarTimer);
-  deskBarTimer = setTimeout(() => {
-    const bar = document.getElementById('deskViewBar');
-    if (bar && deskViewActive) { bar.style.opacity = '0'; bar.style.pointerEvents = 'none'; }
-  }, 3000);
-}
-
-function exitDeskView() {
-  deskViewActive = false;
-  clearTimeout(deskBarTimer);
-  const overlay = document.getElementById('deskViewOverlay');
-  overlay.style.display = 'none';
-  overlay.removeEventListener('pointerdown', deskBarTap);
-  document.body.style.overflow = '';
-  if (document.fullscreenElement || document.webkitFullscreenElement) {
-    if (document.exitFullscreen) document.exitFullscreen();
-    else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
-  }
-  // Switch back to clocks tab
-  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  const clocksPanel = document.getElementById('panel-clocks');
-  const clocksBtn = document.querySelector('.tab-btn');
-  if (clocksPanel) clocksPanel.classList.add('active');
-  if (clocksBtn) clocksBtn.classList.add('active');
-}
-
-// Exit on Escape key
-document.addEventListener('keydown', e => { if (e.key === 'Escape' && deskViewActive) exitDeskView(); });
-// Exit if native fullscreen is closed by browser UI
-document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement && deskViewActive) exitDeskView(); });
-document.addEventListener('webkitfullscreenchange', () => { if (!document.webkitFullscreenElement && deskViewActive) exitDeskView(); });
-
-function getAnalogSize() {
-  // Scale analog clock based on screen width
-  const w = window.innerWidth;
-  if (w <= 400) return 80;
-  if (w <= 600) return 90;
-  if (w <= 900) return 110;
-  if (w <= 1400) return 130;
-  return 150;
-}
-
-function getClockFontSize() {
-  const w = window.innerWidth;
-  if (w <= 400) return { time: 20, secs: 12, ampm: 11 };
-  if (w <= 600) return { time: 24, secs: 14, ampm: 12 };
-  if (w <= 900) return { time: 28, secs: 16, ampm: 13 };
-  return { time: 34, secs: 19, ampm: 15 };
-}
-
-function renderDeskView() {
-  const grid = document.getElementById('deskViewGrid');
-  if (!grid) return;
-
-  // Update top bar home time
-  const home = userZones.find(z => z.home) || userZones[0];
-  if (home) {
-    const tp = getTimeParts(home.tz);
-    const te = document.getElementById('deskViewTime');
-    if (te) te.textContent = hourFormat === 12
-      ? `${tp.h12}:${tp.m}:${tp.s} ${tp.ampm} — ${home.label}`
-      : `${String(tp.h).padStart(2,'0')}:${tp.m}:${tp.s} — ${home.label}`;
-  }
-
-  const n     = userZones.length;
-  const cols  = parseInt(grid.dataset.cols)  || 1;
-  const rows  = parseInt(grid.dataset.rows)  || n;
-  const cellW = parseInt(grid.dataset.cellW) || Math.floor(window.innerWidth / cols);
-  const barH  = document.getElementById('deskViewBar')?.getBoundingClientRect().height || 56;
-  const availH = window.innerHeight - barH;
-  const cellH = parseInt(grid.dataset.cellH) || Math.floor(availH / rows);
-
-  // Typography scale — fluid sizing based on cell dimensions
-  const cityFS   = Math.max(12, Math.min(26, Math.round(Math.min(cellW, cellH) * 0.075)));
-  const timeFS   = Math.max(14, Math.min(36, Math.round(cellW * 0.11)));
-  const detailFS = Math.max(9,  Math.min(13, Math.round(cellW * 0.042)));
-  const gap      = Math.max(4,  Math.round(cellH * 0.02));
-
-  // Analog clock fills as much space as possible
-  // Reserve: city row + gap + time row + gap + 2×detail rows + paddings
-  const reservedH = cityFS + 4 + gap + timeFS + 4 + gap + detailFS * 2 + 6 + gap * 2 + 24;
-  const analogSize = Math.max(60, Math.round(Math.min(
-    cellW * 0.78,
-    (cellH - reservedH)
-  )));
-
-  const needsRebuild = grid.children.length !== n ||
-    userZones.some((z, i) => {
-      const c = document.getElementById(`dcard-${i}`);
-      return !c || c.dataset.tz !== z.tz;
-    });
-
-  if (needsRebuild) {
-    grid.innerHTML = userZones.map((z, i) => {
-      const accent = z.home ? '#c8f060' : '#8899ff';
-      const pad    = Math.max(8, Math.round(cellH * 0.035));
-      return `<div id="dcard-${i}" data-tz="${z.tz}"
-        style="display:flex;flex-direction:column;align-items:center;justify-content:space-between;
-               padding:${pad}px ${Math.max(8, Math.round(cellW*0.04))}px ${pad}px;
-               overflow:hidden;position:relative;
-               border-right:1px solid rgba(255,255,255,0.04);
-               border-bottom:1px solid rgba(255,255,255,0.04);
-               background:radial-gradient(ellipse at 50% 15%, #1e1e30 0%, #09090f 100%);">
-
-        <!-- ① CITY NAME — always visible at top -->
-        <div style="width:100%;text-align:center;flex-shrink:0;">
-          <div style="display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:nowrap;">
-            <span style="font-size:${cityFS}px;font-weight:800;color:#fff;letter-spacing:-0.3px;
-                         white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-                         max-width:${cellW - 60}px;display:block;">${z.label}</span>
-            ${z.home ? `<span style="font-size:${Math.max(8,Math.round(cityFS*0.5))}px;
-              font-family:var(--mono);color:${accent};
-              background:rgba(200,240,96,0.1);border:1px solid rgba(200,240,96,0.25);
-              padding:1px 6px;border-radius:5px;white-space:nowrap;flex-shrink:0;">HOME</span>` : ''}
-          </div>
-        </div>
-
-        <!-- ② WATCH FACE — centre, fills remaining space -->
-        <div id="dface-${i}" style="flex-shrink:0;display:flex;align-items:center;justify-content:center;"></div>
-
-        <!-- ③ DETAILS BELOW — time + date + offset -->
-        <div style="width:100%;text-align:center;flex-shrink:0;display:flex;flex-direction:column;gap:${Math.max(2,gap-2)}px;">
-          <div id="dtime-${i}" style="font-family:var(--mono);font-size:${timeFS}px;font-weight:400;
-               color:${accent};letter-spacing:0px;line-height:1;"></div>
-          <div id="ddate-${i}" style="font-family:var(--mono);font-size:${detailFS}px;
-               color:rgba(240,240,248,0.42);letter-spacing:0.3px;"></div>
-          <div id="doff-${i}"  style="font-family:var(--mono);font-size:${Math.max(8,detailFS-1)}px;
-               color:rgba(240,240,248,0.25);letter-spacing:0.3px;"></div>
-        </div>
-
-      </div>`;
-    }).join('');
-  }
-
-  // Update dynamic content in-place
-  userZones.forEach((z, i) => {
-    const tp      = getTimeParts(z.tz);
-    const faceEl  = document.getElementById(`dface-${i}`);
-    const timeEl  = document.getElementById(`dtime-${i}`);
-    const dateEl  = document.getElementById(`ddate-${i}`);
-    const offEl   = document.getElementById(`doff-${i}`);
-    if (!faceEl) return;
-
-    // Ensure face container has correct size
-    faceEl.style.width  = analogSize + 'px';
-    faceEl.style.height = analogSize + 'px';
-
-    const timeStr = hourFormat === 12
-      ? `${tp.h12}:${tp.m}:${tp.s} ${tp.ampm}`
-      : `${String(tp.h).padStart(2,'0')}:${tp.m}:${tp.s}`;
-    if (timeEl && timeEl.textContent !== timeStr) timeEl.textContent = timeStr;
-
-    const ds = formatDate(z.tz);
-    if (dateEl && dateEl.textContent !== ds) dateEl.textContent = ds;
-
-    const off = getOffset(z.tz);
-    if (offEl && offEl.textContent !== off) offEl.textContent = off;
-
-    renderLuxuryWatch(faceEl, z, tp, analogSize);
-  });
-}
-
-/* ═══════════════════════════════════════════════════════
-   LUXURY WATCH FACE — Render-once, update-in-place
-   viewBox: 200×200  cx/cy: 100,100  bezel r: 96
-═══════════════════════════════════════════════════════ */
-function renderLuxuryWatch(container, z, tp, size) {
-  const isHome = z.home;
-  const A  = isHome ? '#c8f060' : '#8899ff';  // accent
-  const AD = isHome ? '#8aad30' : '#5566cc';  // accent dark
-  const AO = isHome ? '0.9'     : '0.85';     // accent opacity
-
-  const { hour, min, sec } = getClockAngles(z.tz);
-  const CX = 100, CY = 100;
-  const R  = 88;   // face radius
-  const RB = 96;   // bezel radius
-  const circumference = +(2 * Math.PI * (R - 8)).toFixed(2);
-  const secDash = +(circumference * parseInt(tp.s) / 60).toFixed(2);
-
-  // Unique ID prefix per container
-  const uid = 'lw' + container.id.replace(/\W/g, '');
-
-  // --- Hour markers (baton style) ---
-  const hourMarkers = Array.from({length: 12}, (_, i) => {
-    const deg = i * 30;
-    const rad = deg * Math.PI / 180;
-    const isCardinal = i % 3 === 0;
-    const r1  = R - 3, r2 = isCardinal ? R - 17 : R - 10;
-    const sw  = isCardinal ? 5 : 2;
-    const col = isCardinal ? AD : 'rgba(255,255,255,0.3)';
-    const x1 = +(CX + Math.sin(rad)*r1).toFixed(2), y1 = +(CY - Math.cos(rad)*r1).toFixed(2);
-    const x2 = +(CX + Math.sin(rad)*r2).toFixed(2), y2 = +(CY - Math.cos(rad)*r2).toFixed(2);
-    const shine1x = +(CX + Math.sin(rad)*(r1-1)).toFixed(2), shine1y = +(CY - Math.cos(rad)*(r1-1)).toFixed(2);
-    const shine2x = +(CX + Math.sin(rad)*(r2+2)).toFixed(2), shine2y = +(CY - Math.cos(rad)*(r2+2)).toFixed(2);
-    return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${col}" stroke-width="${sw}" stroke-linecap="round"/>
-      ${isCardinal ? `<line x1="${shine1x}" y1="${shine1y}" x2="${shine2x}" y2="${shine2y}" stroke="rgba(255,255,255,0.35)" stroke-width="1.2" stroke-linecap="round"/>` : ''}`;
-  }).join('');
-
-  // --- Minute dots ---
-  const minDots = Array.from({length: 60}, (_, i) => {
-    if (i % 5 === 0) return '';
-    const rad = i * 6 * Math.PI / 180;
-    const x1 = +(CX + Math.sin(rad)*(R-3)).toFixed(2),  y1 = +(CY - Math.cos(rad)*(R-3)).toFixed(2);
-    const x2 = +(CX + Math.sin(rad)*(R-7)).toFixed(2),  y2 = +(CY - Math.cos(rad)*(R-7)).toFixed(2);
-    return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="rgba(255,255,255,0.14)" stroke-width="1" stroke-linecap="round"/>`;
-  }).join('');
-
-  // Guilloche pattern — very subtle radial lines on dial
-  const guilloche = Array.from({length: 48}, (_, i) => {
-    const rad = i * 7.5 * Math.PI / 180;
-    const x1 = +(CX + Math.sin(rad)*32).toFixed(2), y1 = +(CY - Math.cos(rad)*32).toFixed(2);
-    const x2 = +(CX + Math.sin(rad)*54).toFixed(2), y2 = +(CY - Math.cos(rad)*54).toFixed(2);
-    return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="rgba(255,255,255,0.018)" stroke-width="0.5"/>`;
-  }).join('');
-
-  if (!container.querySelector('svg')) {
-    container.innerHTML = `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"
-      style="width:${size}px;height:${size}px;display:block;overflow:visible;">
-      <defs>
-        <!-- Face gradient — deep dark with slight centre lift -->
-        <radialGradient id="${uid}face" cx="42%" cy="36%" r="72%">
-          <stop offset="0%"   stop-color="#24243a"/>
-          <stop offset="55%"  stop-color="#111120"/>
-          <stop offset="100%" stop-color="#060610"/>
-        </radialGradient>
-
-        <!-- Metallic bezel gradient -->
-        <linearGradient id="${uid}bezel" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%"   stop-color="#6a6a80"/>
-          <stop offset="20%"  stop-color="#38384a"/>
-          <stop offset="50%"  stop-color="#50506a"/>
-          <stop offset="80%"  stop-color="#28283a"/>
-          <stop offset="100%" stop-color="#6a6a80"/>
-        </linearGradient>
-
-        <!-- Outer bezel shine -->
-        <linearGradient id="${uid}bshine" x1="0%" y1="0%" x2="60%" y2="100%">
-          <stop offset="0%"   stop-color="rgba(255,255,255,0.18)"/>
-          <stop offset="100%" stop-color="rgba(255,255,255,0.02)"/>
-        </linearGradient>
-
-        <!-- Hour hand gradient -->
-        <linearGradient id="${uid}hhand" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%"   stop-color="${AD}"/>
-          <stop offset="40%"  stop-color="${A}"/>
-          <stop offset="60%"  stop-color="rgba(255,255,255,0.5)"/>
-          <stop offset="100%" stop-color="${AD}"/>
-        </linearGradient>
-
-        <!-- Minute hand gradient -->
-        <linearGradient id="${uid}mhand" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%"   stop-color="#888899"/>
-          <stop offset="40%"  stop-color="#cccce0"/>
-          <stop offset="60%"  stop-color="rgba(255,255,255,0.55)"/>
-          <stop offset="100%" stop-color="#888899"/>
-        </linearGradient>
-
-        <!-- Glow filter for accent elements -->
-        <filter id="${uid}glow" x="-60%" y="-60%" width="220%" height="220%">
-          <feGaussianBlur stdDeviation="1.5" result="b"/>
-          <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
-        </filter>
-        <filter id="${uid}mglow" x="-30%" y="-30%" width="160%" height="160%">
-          <feGaussianBlur stdDeviation="1" result="b"/>
-          <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
-        </filter>
-        <filter id="${uid}drop" x="-20%" y="-20%" width="140%" height="140%">
-          <feDropShadow dx="1" dy="2" stdDeviation="2.5" flood-color="#000" flood-opacity="0.65"/>
-        </filter>
-      </defs>
-
-      <!-- ░░ BEZEL ░░ -->
-      <circle cx="${CX}" cy="${CY}" r="${RB}"   fill="url(#${uid}bezel)"/>
-      <circle cx="${CX}" cy="${CY}" r="${RB}"   fill="url(#${uid}bshine)" opacity="0.6"/>
-      <circle cx="${CX}" cy="${CY}" r="${RB}"   fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="0.7"/>
-      <circle cx="${CX}" cy="${CY}" r="${RB-3}" fill="none" stroke="rgba(0,0,0,0.55)"       stroke-width="2.5"/>
-
-      <!-- ░░ DIAL FACE ░░ -->
-      <circle cx="${CX}" cy="${CY}" r="${R}" fill="url(#${uid}face)"/>
-
-      <!-- Guilloche texture — clipped to dial -->
-      <circle cx="${CX}" cy="${CY}" r="${R}" fill="none" id="${uid}clipcircle"/>
-      <g style="clip-path:circle(${R}px at ${CX}px ${CY}px)">${guilloche}</g>
-
-      <!-- Inner chapter ring -->
-      <circle cx="${CX}" cy="${CY}" r="${R-1}" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
-
-      <!-- ░░ BRAND MARK — "ZC" top-middle, like a watchmaker's logo. Fixed ZoneClock colors on every clock. ░░ -->
-      <text x="${CX}" y="${CY - R*0.46}" text-anchor="middle" dominant-baseline="central"
-        font-family="Inter,system-ui,sans-serif" font-size="${Math.max(9, R*0.155)}" font-weight="800"
-        letter-spacing="0.5">
-        <tspan fill="rgba(255,255,255,0.95)">Z</tspan><tspan fill="#c8f060">C</tspan>
-      </text>
-
-      <!-- ░░ SECONDS PROGRESS ARC ░░ — no glow filter (was causing the visible stripe) -->
-      <circle id="${uid}arc" cx="${CX}" cy="${CY}" r="${R-8}"
-        fill="none" stroke="${A}" stroke-width="2"
-        stroke-dasharray="${secDash} ${circumference}" stroke-linecap="round"
-        opacity="${AO}" transform="rotate(-90 ${CX} ${CY})"/>
-
-      <!-- ░░ TICK MARKS ░░ -->
-      ${minDots}
-      ${hourMarkers}
-
-      <!-- ░░ HOUR HAND ░░ — baton, tapered -->
-      <g id="${uid}hh" transform="rotate(${hour} ${CX} ${CY})" filter="url(#${uid}drop)">
-        <path d="M${CX-4},${CY+15} L${CX},${CY-52} L${CX+4},${CY+15} Z"
-          fill="url(#${uid}hhand)"/>
-        <!-- lume dot on tip -->
-        <circle cx="${CX}" cy="${CY-46}" r="2.5" fill="${A}" opacity="0.6"/>
-        <!-- highlight stripe -->
-        <line x1="${CX}" y1="${CY+10}" x2="${CX}" y2="${CY-50}"
-          stroke="rgba(255,255,255,0.4)" stroke-width="1" stroke-linecap="round"/>
-        <!-- counter-balance -->
-        <path d="M${CX-3},${CY+15} L${CX},${CY+22} L${CX+3},${CY+15} Z"
-          fill="${AD}" opacity="0.7"/>
-      </g>
-
-      <!-- ░░ MINUTE HAND ░░ -->
-      <g id="${uid}mh" transform="rotate(${min} ${CX} ${CY})" filter="url(#${uid}drop)">
-        <path d="M${CX-2.8},${CY+18} L${CX},${CY-72} L${CX+2.8},${CY+18} Z"
-          fill="url(#${uid}mhand)"/>
-        <!-- lume -->
-        <circle cx="${CX}" cy="${CY-66}" r="2" fill="rgba(220,220,240,0.5)"/>
-        <!-- highlight -->
-        <line x1="${CX}" y1="${CY+12}" x2="${CX}" y2="${CY-70}"
-          stroke="rgba(255,255,255,0.45)" stroke-width="0.8" stroke-linecap="round"/>
-        <!-- counter-balance -->
-        <path d="M${CX-2.5},${CY+18} L${CX},${CY+26} L${CX+2.5},${CY+18} Z"
-          fill="#777788" opacity="0.7"/>
-      </g>
-
-      <!-- ░░ SECOND HAND ░░ — super-slim racing style -->
-      <g id="${uid}sh" transform="rotate(${sec} ${CX} ${CY})">
-        <!-- Main shaft -->
-        <line x1="${CX}" y1="${CY+25}" x2="${CX}" y2="${CY-80}"
-          stroke="${A}" stroke-width="1" stroke-linecap="round"
-          filter="url(#${uid}glow)"/>
-        <!-- Lollipop circle -->
-        <circle cx="${CX}" cy="${CY-62}" r="4"
-          fill="${A}" opacity="0.9" filter="url(#${uid}mglow)"/>
-        <circle cx="${CX}" cy="${CY-62}" r="2" fill="#0a0a10"/>
-        <!-- Counter tail with rectangular weight -->
-        <rect x="${CX-3}" y="${CY+15}" width="6" height="12" rx="2"
-          fill="${A}" opacity="0.75"/>
-      </g>
-
-      <!-- ░░ CENTRE JEWEL ░░ -->
-      <circle cx="${CX}" cy="${CY}" r="9.5" fill="#0d0d1a" stroke="${AD}" stroke-width="1.8"/>
-      <circle cx="${CX}" cy="${CY}" r="5.5" fill="${A}" filter="url(#${uid}mglow)"/>
-      <circle cx="${CX}" cy="${CY}" r="5.5" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="0.7"/>
-      <!-- Jewel highlight -->
-      <ellipse cx="${CX-2}" cy="${CY-2}" rx="2.5" ry="1.8" fill="rgba(255,255,255,0.55)"
-        transform="rotate(-30 ${CX-2} ${CY-2})"/>
-    </svg>`;
-
-    container.dataset.uid = uid;
-    return;
-  }
-
-  // ── In-place update (only changed attributes) ──
-  const svg = container.querySelector('svg');
-  const sid = container.dataset.uid;
-  if (!svg || !sid) { container.innerHTML = ''; renderLuxuryWatch(container, z, tp, size); return; }
-
-  svg.getElementById(`${sid}arc`)?.setAttribute('stroke-dasharray', `${secDash} ${circumference}`);
-  svg.getElementById(`${sid}hh`)?.setAttribute('transform', `rotate(${hour} ${CX} ${CY})`);
-  svg.getElementById(`${sid}mh`)?.setAttribute('transform', `rotate(${min}  ${CX} ${CY})`);
-  svg.getElementById(`${sid}sh`)?.setAttribute('transform', `rotate(${sec}  ${CX} ${CY})`);
-}
-
-// Re-layout and re-render on resize
-window.addEventListener('resize', () => {
-  if (deskViewActive) {
-    layoutDeskGrid();
-    document.getElementById('deskViewGrid').innerHTML = '';
-    renderDeskView();
-  }
-});
-
 
 function setFormat(fmt) {
   hourFormat = fmt;
@@ -1321,145 +641,21 @@ function setFormat(fmt) {
 
 function updateUI() {
   const badge = document.getElementById('planBadge');
-  const loginBtn = document.getElementById('loginBtn');
-  if (isPremium) {
-    badge.textContent = "PREMIUM";
+  if(isPremium) {
+    badge.textContent = "PREMIUM PLAN";
     badge.classList.add('premium');
     document.getElementById('limitNotice').classList.remove('show');
-    if (loginBtn) { loginBtn.textContent = 'LOGOUT'; loginBtn.style.color = 'var(--accent)'; loginBtn.style.borderColor = 'rgba(200,240,96,0.3)'; }
   } else {
-    badge.textContent = "FREE";
+    badge.textContent = "FREE PLAN";
     badge.classList.remove('premium');
-    if (loginBtn) { loginBtn.textContent = 'LOGIN'; loginBtn.style.color = ''; loginBtn.style.borderColor = ''; }
   }
-
   const atLimit = !isPremium && userZones.length >= FREE_LIMIT;
-  const addBtn = document.getElementById('addBtn');
-  const searchInput = document.getElementById('tzSearch');
-  const searchWrap = document.querySelector('.search-wrap');
-
-  if (addBtn) {
-    addBtn.disabled = atLimit;
-    addBtn.style.opacity = atLimit ? '0.35' : '';
-    addBtn.style.cursor = atLimit ? 'not-allowed' : '';
-    addBtn.onclick = atLimit ? (e => { e.preventDefault(); openPremiumModal(); }) : addSelectedZone;
-  }
-  if (searchInput) {
-    searchInput.disabled = atLimit;
-    searchInput.placeholder = atLimit ? 'Upgrade to Premium to add more clocks' : 'Search global standard city or region...';
-  }
-  if (searchWrap) {
-    searchWrap.style.opacity = atLimit ? '0.4' : '';
-    searchWrap.style.pointerEvents = atLimit ? 'none' : '';
-  }
-  if (atLimit) {
-    document.getElementById('limitNotice').classList.add('show');
-    // Use class to close dropdown, NOT inline style (inline style overrides CSS classes permanently)
-    const dd = document.getElementById('tzDropdown');
-    if (dd) dd.classList.remove('open');
-  } else {
-    document.getElementById('limitNotice').classList.remove('show');
-    // Explicitly restore search input in case it was blocked
-    if (searchInput) {
-      searchInput.disabled = false;
-      searchInput.placeholder = 'Search global standard city or region...';
-    }
-    if (searchWrap) {
-      searchWrap.style.opacity = '';
-      searchWrap.style.pointerEvents = '';
-    }
-    if (addBtn) {
-      addBtn.disabled = false;
-      addBtn.style.opacity = '';
-      addBtn.style.cursor = '';
-      addBtn.onclick = addSelectedZone;
-    }
+  const btn = document.getElementById('addBtn');
+  if(btn) {
+    btn.disabled = atLimit;
+    btn.title = atLimit ? 'Upgrade to add more zones' : '';
   }
 }
-
-/* ═══════════════════════════════════════
-   LOGIN SYSTEM
-   Credentials are hashed — do NOT store
-   plain text passwords in production.
-═══════════════════════════════════════ */
-// SHA-256 via SubtleCrypto (async)
-async function sha256(str) {
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
-  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
-}
-
-// ── YOUR PREMIUM ACCOUNT ──
-// Username: admin   Password: ZoneClock2025!
-// To change: run sha256('yourpassword') in console and paste the hash below
-const PREMIUM_ACCOUNTS = {
-  'admin': 'a621198b269e76b8f2792727a7585c3e572fbecfef95e9b22b975c07778b6b2b'
-};
-
-function openLoginModal() {
-  if (isPremium) { logout(); return; }
-  document.getElementById('loginUser').value = '';
-  document.getElementById('loginPass').value = '';
-  document.getElementById('loginError').classList.remove('show');
-  document.getElementById('loginOverlay').classList.add('show');
-  setTimeout(() => document.getElementById('loginUser').focus(), 100);
-}
-function closeLoginModal() { document.getElementById('loginOverlay').classList.remove('show'); }
-
-async function submitLogin() {
-  const user = document.getElementById('loginUser').value.trim().toLowerCase();
-  const pass = document.getElementById('loginPass').value;
-  const errEl = document.getElementById('loginError');
-  errEl.classList.remove('show');
-
-  const expectedHash = PREMIUM_ACCOUNTS[user];
-  if (!expectedHash) { errEl.classList.add('show'); return; }
-
-  const hash = await sha256(pass);
-  if (hash === expectedHash) {
-    isPremium = true;
-    localStorage.setItem('zc_premium', 'true');
-    localStorage.setItem('zc_user', user);
-    closeLoginModal();
-    updateUI();
-    renderClocks();
-    // Show welcome toast
-    showToast(`Welcome back, ${user}! Premium unlocked ✓`);
-  } else {
-    errEl.classList.add('show');
-    document.getElementById('loginPass').value = '';
-    document.getElementById('loginPass').focus();
-  }
-}
-
-function logout() {
-  if (!confirm('Sign out of Premium?')) return;
-  isPremium = false;
-  localStorage.removeItem('zc_premium');
-  localStorage.removeItem('zc_user');
-  // Trim zones back to free limit
-  if (userZones.length > FREE_LIMIT) {
-    userZones = userZones.slice(0, FREE_LIMIT);
-    saveZones();
-  }
-  updateUI();
-  renderClocks();
-  showToast('Signed out. You are now on the Free plan.');
-}
-
-function showToast(msg) {
-  let toast = document.getElementById('zcToast');
-  if (!toast) {
-    toast = document.createElement('div');
-    toast.id = 'zcToast';
-    toast.style.cssText = 'position:fixed;bottom:calc(24px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--border-hover);color:var(--text);font-size:13px;padding:12px 20px;border-radius:12px;z-index:700;white-space:nowrap;box-shadow:0 8px 32px rgba(0,0,0,0.4);transition:opacity 0.3s;max-width:90vw;text-align:center;';
-    document.body.appendChild(toast);
-  }
-  toast.textContent = msg;
-  toast.style.opacity = '1';
-  clearTimeout(toast._t);
-  toast._t = setTimeout(() => toast.style.opacity = '0', 3000);
-}
-
 
 function openPremiumModal() { document.getElementById('premiumModal').classList.add('show'); }
 function closePremiumModal() { document.getElementById('premiumModal').classList.remove('show'); }
@@ -1552,18 +748,11 @@ function renderClocks() {
   const container = document.getElementById('clocksContainer');
   if (!container) return;
   if (userZones.length === 0) {
-    container.innerHTML = `<div class="empty-state"><div class="empty-icon">🌍</div>No clocks yet. Search a city below to add one.</div>`;
+    container.innerHTML = `<div class="empty-state"><div class="empty-icon">🗺️</div>No monitored track points. Type below to query a tracking zone.</div>`;
     return;
   }
-
-  // Rebuild if count doesn't match OR if any card's data-tz is wrong
-  const needsRebuild = container.children.length !== userZones.length ||
-    userZones.some((z, i) => {
-      const card = document.getElementById(`card-${i}`);
-      return !card || card.dataset.tz !== z.tz;
-    });
-
-  if (needsRebuild) {
+  
+  if (container.children.length !== userZones.length) {
     container.innerHTML = userZones.map((z, i) => buildClockHTML(z, i)).join('');
   }
 
@@ -1639,18 +828,18 @@ function selectZone(tz, label) {
 }
 
 function addSelectedZone() {
-  // Hard guard — never allow free users past limit regardless of UI state
-  if (!isPremium && userZones.length >= FREE_LIMIT) {
-    openPremiumModal();
-    return;
-  }
   if (!selectedTz) {
     const query = document.getElementById('tzSearch').value.trim().toLowerCase();
     const match = ZONES.find(z => z.label.toLowerCase() === query);
     if (match) selectedTz = match;
   }
   if (!selectedTz) return;
-
+  
+  if (!isPremium && userZones.length >= FREE_LIMIT) {
+    openPremiumModal();
+    document.getElementById('limitNotice').classList.add('show');
+    return;
+  }
   if (userZones.some(z => z.tz === selectedTz.tz)) {
     selectedTz = null;
     document.getElementById('tzSearch').value = '';
@@ -1693,77 +882,23 @@ function setHome(i) {
 }
 
 function onSearch() { selectedTz = null; openDropdown(); }
-
-function highlightMatch(text, query) {
-  if (!query) return text;
-  const idx = text.toLowerCase().indexOf(query.toLowerCase());
-  if (idx === -1) return text;
-  return text.slice(0, idx) +
-    `<span style="color:var(--accent);font-weight:700;">${text.slice(idx, idx + query.length)}</span>` +
-    text.slice(idx + query.length);
-}
-
-const REGION_EMOJI = {
-  'America': '🌎', 'Europe': '🌍', 'Asia': '🌏',
-  'Africa': '🌍', 'Australia': '🌏', 'Pacific': '🌊',
-  'Atlantic': '🌊', 'Indian': '🌊', 'Arctic': '❄️',
-  'Antarctica': '❄️'
-};
-
 function openDropdown() {
-  const query    = document.getElementById('tzSearch').value.trim().toLowerCase();
+  const query = document.getElementById('tzSearch').value.trim().toLowerCase();
   const dropdown = document.getElementById('tzDropdown');
-  if (!dropdown) return;
-
+  if(!dropdown) return;
   const addedTzs = new Set(userZones.map(z => z.tz));
-
-  // Show top recent/popular zones when empty
-  const pool = query
-    ? ZONES.filter(z =>
-        z.label.toLowerCase().includes(query) ||
-        z.tz.toLowerCase().replace(/_/g, ' ').includes(query) ||
-        z.tz.split('/').pop().toLowerCase().replace(/_/g,' ').includes(query)
-      )
-    : ZONES.slice(0, 30); // show popular zones on focus
-
-  if (pool.length === 0) {
-    dropdown.innerHTML = `<div class="tz-no-results">No cities found for "<strong>${query}</strong>"</div>`;
+  
+  let filtered = ZONES.filter(z => z.label.toLowerCase().includes(query) || z.tz.toLowerCase().replace(/_/g, ' ').includes(query));
+  if (filtered.length === 0) {
+    dropdown.innerHTML = `<div class="tz-no-results">No results for "${query}"</div>`;
     dropdown.classList.add('open');
     return;
   }
-
-  dropdown.innerHTML = pool.slice(0, 80).map(z => {
-    const isAdded  = addedTzs.has(z.tz);
-    const region   = z.tz.split('/')[0];
-    const emoji    = REGION_EMOJI[region] || '🌐';
-    const tzShort  = z.tz.split('/').pop().replace(/_/g, ' ');
-    const offset   = getOffset(z.tz);
-    const cityHTML = highlightMatch(z.label, query);
-    const tzHTML   = highlightMatch(tzShort, query);
-
-    return `<div class="tz-option${isAdded ? ' selected' : ''}"
-      onclick="${isAdded ? '' : `selectZone('${z.tz}','${z.label.replace(/'/g, "\\'")}')`}"
-      style="padding:10px 16px;cursor:${isAdded ? 'default' : 'pointer'};">
-      <div style="display:flex;align-items:center;gap:10px;min-width:0;">
-        <span style="font-size:16px;flex-shrink:0;">${emoji}</span>
-        <div style="min-width:0;flex:1;">
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-            <span class="tz-option-city" style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${cityHTML}</span>
-            <span style="font-family:var(--mono);font-size:11px;color:var(--accent);flex-shrink:0;font-weight:600;">${offset}</span>
-          </div>
-          <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:1px;display:flex;align-items:center;justify-content:space-between;">
-            <span>${tzHTML}</span>
-            ${isAdded ? '<span style="color:var(--accent);font-size:10px;font-weight:600;">✓ Added</span>' : ''}
-          </div>
-        </div>
-      </div>
-    </div>`;
+  
+  dropdown.innerHTML = filtered.slice(0, 60).map(z => {
+    const isAdded = addedTzs.has(z.tz);
+    return `<div class="tz-option${isAdded ? ' selected' : ''}" onclick="${isAdded ? '' : `selectZone('${z.tz}','${z.label.replace(/'/g, "\\'")}')`}"><span class="tz-option-city">${z.label}</span><span class="tz-option-code">${z.tz.split('/')[0]} (${getOffset(z.tz)})</span></div>`;
   }).join('');
-
-  if (!query && pool.length > 0) {
-    dropdown.innerHTML = `<div style="padding:8px 16px 6px;font-family:var(--mono);font-size:9px;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border);">Popular cities</div>` + dropdown.innerHTML;
-  }
-
   dropdown.classList.add('open');
 }
 
@@ -1840,14 +975,9 @@ function addAlarm() {
 function deleteAlarm(id) {
   alarms = alarms.filter(a => a.id !== id);
   firingAlarmIds.delete(id);
-  // Do NOT delete lastFiredMinute[id] — keeps it from instantly re-firing
-  // if checkAlarms() runs again within the same minute window.
+  delete lastFiredMinute[id];
   saveAlarms();
-  if (firingAlarmIds.size === 0) {
-    document.getElementById('alarmOverlay').classList.remove('show');
-    stopAlarmSound();
-    if (currentFiringAlarm && currentFiringAlarm.id === id) currentFiringAlarm = null;
-  }
+  if (firingAlarmIds.size === 0) document.getElementById('alarmOverlay').classList.remove('show');
   renderAlarms();
 }
 
@@ -1857,18 +987,10 @@ function toggleAlarm(id) {
     alarm.enabled = !alarm.enabled;
     if (!alarm.enabled) {
       firingAlarmIds.delete(id);
-    } else {
-      // Re-enabling: clear the "already fired" marker so it can trigger
-      // again today if its time comes around — otherwise a dismissed-then-
-      // re-enabled alarm would silently never fire again until tomorrow.
       delete lastFiredMinute[id];
     }
     saveAlarms();
-    if (firingAlarmIds.size === 0) {
-      document.getElementById('alarmOverlay').classList.remove('show');
-      stopAlarmSound();
-      if (currentFiringAlarm && currentFiringAlarm.id === id) currentFiringAlarm = null;
-    }
+    if (firingAlarmIds.size === 0) document.getElementById('alarmOverlay').classList.remove('show');
     renderAlarms();
   }
 }
@@ -1876,6 +998,15 @@ function toggleAlarm(id) {
 function updateAlarmLabel(id, text) {
   const alarm = alarms.find(a => a.id === id);
   if (alarm) { alarm.label = text; saveAlarms(); }
+}
+
+function dismissAlarm(id) {
+  firingAlarmIds.delete(id);
+  delete lastFiredMinute[id];
+  const card = document.getElementById('alarm-card-' + id);
+  if (card) card.classList.remove('firing');
+  if (firingAlarmIds.size === 0) document.getElementById('alarmOverlay').classList.remove('show');
+  renderAlarms();
 }
 
 function renderAlarms() {
@@ -1906,14 +1037,14 @@ function renderAlarms() {
           <div class="alarm-meta">${a.zoneLabel} Time Zone (${getOffset(a.tz)})</div>
           <input type="text" class="alarm-label-input" placeholder="Label asset reminder..." value="${a.label}" onchange="updateAlarmLabel('${a.id}', this.value)">
         </div>
-        <button class="alarm-dismiss-btn" onclick="dismissAlarm('${a.id}')">Turn Off</button>
+        <button class="alarm-dismiss-btn" onclick="dismissAlarm('${a.id}')">Clear</button>
         <button class="alarm-del" onclick="deleteAlarm('${a.id}')">×</button>
       </div>
     `;
   }).join('');
 }
 
-function checkAlarms() {
+function tickLookup() {
   const now = new Date();
   alarms.forEach(a => {
     if (!a.enabled) return;
@@ -1935,97 +1066,6 @@ function checkAlarms() {
   });
 }
 
-// Refresh the World Lookup tab's live time display if it's open
-function tickLookup() {
-  const lkResults = document.getElementById('lkResults');
-  if (lkResults && lkResults.style.display === 'block' && typeof runMeetingLookup === 'function') {
-    runMeetingLookup();
-  }
-}
-
-/* ═══════════════════════════════════════
-   ALARM SOUND — Web Audio API, no external file needed
-═══════════════════════════════════════ */
-let _alarmAudioCtx = null;
-let _alarmSoundInterval = null;
-
-function getAudioCtx() {
-  if (!_alarmAudioCtx) {
-    try { _alarmAudioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
-    catch (e) { return null; }
-  }
-  // iOS/Safari suspends the context until a user gesture resumes it
-  if (_alarmAudioCtx.state === 'suspended') _alarmAudioCtx.resume().catch(() => {});
-  return _alarmAudioCtx;
-}
-
-// Unlock audio on first user interaction (required by iOS Safari & Chrome autoplay policy)
-['click', 'touchstart', 'keydown'].forEach(evt =>
-  document.addEventListener(evt, () => getAudioCtx(), { once: true, passive: true })
-);
-
-function playBeepSequence() {
-  const ctx = getAudioCtx();
-  if (!ctx) return;
-  const now = ctx.currentTime;
-  // Three ascending beeps, classic alarm pattern
-  [0, 0.28, 0.56].forEach((offset, i) => {
-    const osc  = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = 'square';
-    osc.frequency.setValueAtTime(880 + i * 110, now + offset);
-    gain.gain.setValueAtTime(0, now + offset);
-    gain.gain.linearRampToValueAtTime(0.28, now + offset + 0.02);
-    gain.gain.linearRampToValueAtTime(0, now + offset + 0.22);
-    osc.connect(gain).connect(ctx.destination);
-    osc.start(now + offset);
-    osc.stop(now + offset + 0.24);
-  });
-}
-
-function startAlarmSound() {
-  stopAlarmSound(); // clear any existing loop first
-  playBeepSequence();
-  // Repeat the beep sequence every 1.4s until dismissed
-  _alarmSoundInterval = setInterval(playBeepSequence, 1400);
-}
-
-function stopAlarmSound() {
-  if (_alarmSoundInterval) { clearInterval(_alarmSoundInterval); _alarmSoundInterval = null; }
-}
-
-/* ═══════════════════════════════════════
-   DEVICE / BROWSER NOTIFICATION
-═══════════════════════════════════════ */
-async function fireDeviceNotification(title, body) {
-  if (!('Notification' in window)) return;
-
-  // Ask for permission right now if not yet decided — many browsers allow
-  // this on a "trusted" trigger like an alarm firing while tab is focused.
-  if (Notification.permission === 'default') {
-    try { await Notification.requestPermission(); } catch (e) {}
-  }
-  if (Notification.permission !== 'granted') return;
-
-  const opts = {
-    body, icon: 'icon-192.png', badge: 'icon-32.png', tag: 'zoneclock-alarm',
-    requireInteraction: true, vibrate: [300, 100, 300, 100, 300],
-    actions: [{ action: 'dismiss', title: 'Dismiss' }, { action: 'snooze', title: 'Snooze 5 min' }],
-  };
-
-  // Prefer the Service Worker route — required for actions[] and works
-  // even when the tab isn't focused / is backgrounded on mobile.
-  if ('serviceWorker' in navigator) {
-    try {
-      const reg = await navigator.serviceWorker.ready;
-      await reg.showNotification(title, opts);
-      return;
-    } catch (e) { /* fall through to plain Notification */ }
-  }
-  // Fallback — plain Notification (actions[] ignored by most browsers here)
-  try { new Notification(title, opts); } catch (e) {}
-}
-
 function triggerAlarmOverlay(a) {
   firingAlarmIds.add(a.id);
   currentFiringAlarm = a;
@@ -2034,7 +1074,7 @@ function triggerAlarmOverlay(a) {
   const overlay = document.getElementById('alarmOverlay');
   if(!overlay) return;
   document.getElementById('alarmOverlayLabel').textContent = a.label || 'ZoneClock Reminder';
-
+  
   const [h, m] = a.time.split(':');
   let timeText = a.time;
   if(hourFormat === 12) {
@@ -2044,59 +1084,22 @@ function triggerAlarmOverlay(a) {
   document.getElementById('alarmOverlayTime').textContent = `${timeText} (${a.zoneLabel} standard)`;
   overlay.classList.add('show');
 
-  // 🔊 Play the alarm sound, looping until dismissed
-  startAlarmSound();
-
-  // 📱 Fire a device-level notification so it's visible even if the tab is backgrounded
-  fireDeviceNotification(
-    a.label || 'ZoneClock Alarm',
-    `${timeText} (${a.zoneLabel}) — tap to open ZoneClock`
-  );
-
-  // Try to vibrate directly too (works even without notification permission on Android)
-  if (navigator.vibrate) { try { navigator.vibrate([300, 100, 300, 100, 300]); } catch(e) {} }
+  if (Notification.permission === 'granted') {
+    navigator.serviceWorker.ready.then(reg => {
+      reg.showNotification(a.label || 'Alarm Notification', {
+        body: `Your alarm for ${timeText} (${a.zoneLabel}) is firing!`,
+        icon: '/icon-192.png', badge: '/icon-32.png', tag: 'zoneclock-alarm',
+        requireInteraction: true,
+        actions: [{ action: 'dismiss', title: 'Dismiss' }, { action: 'snooze', title: 'Snooze 5 min' }]
+      });
+    });
+  }
 }
 
 function overlayDismiss() {
-  // Stop sound and close overlay immediately — don't wait for anything
-  stopAlarmSound();
-  document.getElementById('alarmOverlay').classList.remove('show');
-
-  // Disable all currently firing alarms so they don't re-trigger
-  firingAlarmIds.forEach(id => {
-    const alarm = alarms.find(a => a.id === id);
-    if (alarm) alarm.enabled = false;
-  });
-  firingAlarmIds.clear();
-  currentFiringAlarm = null;
-
-  saveAlarms();
-  renderAlarms();
-
-  // Close any OS notification
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.ready.then(reg =>
-      reg.getNotifications({ tag: 'zoneclock-alarm' }).then(ns => ns.forEach(n => n.close()))
-    ).catch(() => {});
-  }
-}
-
-function dismissAlarm(id) {
-  // Called from the "Turn Off" button on individual alarm cards
-  const alarm = alarms.find(a => a.id === id);
-  if (alarm) alarm.enabled = false;
-  firingAlarmIds.delete(id);
-  if (currentFiringAlarm && currentFiringAlarm.id === id) currentFiringAlarm = null;
-
-  stopAlarmSound();
-  if (firingAlarmIds.size === 0) {
-    document.getElementById('alarmOverlay').classList.remove('show');
-  }
-  saveAlarms();
-  renderAlarms();
+  if (currentFiringAlarm) { dismissAlarm(currentFiringAlarm.id); currentFiringAlarm = null; }
 }
 function overlaySnooze() {
-  stopAlarmSound();
   if (!currentFiringAlarm) return;
   const a = currentFiringAlarm;
   dismissAlarm(a.id);
@@ -2265,7 +1268,6 @@ renderWorldBar();
 renderAlarms();
 updateUI();
 requestNotifPermission();
-setTimeout(getSupabase, 600); // init Supabase auth after page renders
 
 let lastSec = -1;
 function tick() {
@@ -2274,48 +1276,12 @@ function tick() {
     lastSec = s;
     renderClocks();
     renderWorldBar();
-    checkAlarms();
     if(s % 10 === 0) tickLookup();
-    if(deskViewActive) renderDeskView();
+    if(deskActive) renderDesk();
   }
   requestAnimationFrame(tick);
 }
 requestAnimationFrame(tick);
-
-/* ═══════════════════════════════════════
-   iOS BACKGROUND LIMITATION HANDLING
-   iOS Safari suspends JS timers (setInterval/RAF) when the tab is
-   backgrounded or the screen locks — this is a WebKit platform limit,
-   not something we can override from JS. We mitigate by:
-   1) Warning the user clearly on the Alarms tab.
-   2) Catching up instantly via the Page Visibility API the moment
-      the tab regains focus, so a missed alarm still fires (a bit late,
-      but reliably) instead of silently vanishing.
-═══════════════════════════════════════ */
-function isIOS() {
-  return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-}
-
-(function initIOSWarning() {
-  if (isIOS()) {
-    const el = document.getElementById('iosAlarmWarning');
-    if (el) el.style.display = 'block';
-  }
-})();
-
-let _lastVisibilityCheck = Date.now();
-document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') {
-    // Tab just came back to foreground — immediately re-check alarms
-    // in case any were missed while backgrounded (common on iOS).
-    const gapMs = Date.now() - _lastVisibilityCheck;
-    if (gapMs > 5000) checkAlarms(); // only matters if we were away a while
-  } else {
-    _lastVisibilityCheck = Date.now();
-  }
-});
-window.addEventListener('focus', checkAlarms);
-window.addEventListener('pageshow', checkAlarms);
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
@@ -2323,508 +1289,316 @@ if ('serviceWorker' in navigator) {
       .then(reg => console.log('ZoneClock SW registered:', reg.scope))
       .catch(err => console.warn('SW registration failed:', err));
   });
-
-  // Listen for actions taken on the OS-level notification
-  // (Dismiss / Snooze buttons, or tapping the notification body)
-  navigator.serviceWorker.addEventListener('message', event => {
-    const data = event.data;
-    if (!data || data.type !== 'alarm-action') return;
-
-    if (data.action === 'snooze') {
-      if (currentFiringAlarm) overlaySnooze();
-      else if (firingAlarmIds.size > 0) {
-        // No overlay context (tab was backgrounded) — snooze the most recent firing alarm
-        const id = [...firingAlarmIds][0];
-        const a = alarms.find(x => x.id === id);
-        if (a) { currentFiringAlarm = a; overlaySnooze(); }
-      }
-    } else if (data.action === 'dismiss') {
-      if (currentFiringAlarm) overlayDismiss();
-      else firingAlarmIds.forEach(id => dismissAlarm(id));
-    }
-    // action === 'open' (notification body tap) — just bring tab to front, nothing else to do
-  });
 }
 
 /* ═══════════════════════════════════════
-   STRIPE CHECKOUT + SUPABASE PREMIUM
+   CALENDAR CONVERTER — 11 systems
 ═══════════════════════════════════════ */
-
-// ── Supabase config — replace with your project values ──
-const SUPABASE_URL  = 'https://YOUR_PROJECT_ID.supabase.co';
-const SUPABASE_ANON = 'YOUR_SUPABASE_ANON_KEY';
-let _sb = null; // Supabase client instance
-let currentUser = null;
-
-// Returns true only when real credentials have been filled in
-const SUPABASE_READY = !SUPABASE_URL.includes('YOUR_PROJECT') && !SUPABASE_ANON.includes('YOUR_SUPABASE');
-
-function getSupabase() {
-  if (!SUPABASE_READY) return null; // placeholder creds — skip silently
-  if (_sb) return _sb;
-  if (!window.supabase?.createClient) return null; // CDN not loaded yet
-  try {
-    _sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
-    _sb.auth.onAuthStateChange(async (_e, session) => {
-      currentUser = session?.user || null;
-      const loginBtn = document.getElementById('loginBtn');
-      if (currentUser) {
-        await syncPremiumStatus(currentUser.id);
-        if (loginBtn) loginBtn.textContent = 'LOGOUT';
-      } else {
-        isPremium = false;
-        localStorage.removeItem('zc_premium');
-        updateUI();
-        if (loginBtn) loginBtn.textContent = 'LOGIN';
-      }
-    });
-    // Restore existing session
-    _sb.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) { currentUser = session.user; syncPremiumStatus(session.user.id); }
-    }).catch(() => {});
-  } catch(e) { console.warn('Supabase init failed:', e); _sb = null; }
-  return _sb;
-}
-
-async function syncPremiumStatus(userId) {
-  try {
-    const res = await fetch('/.netlify/functions/get-premium-status', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId }),
-    });
-    if (res.ok) {
-      const { isPremium: p } = await res.json();
-      isPremium = p;
-      localStorage.setItem('zc_premium', p ? 'true' : 'false');
-      updateUI();
-    }
-  } catch { /* offline — use localStorage cache */ }
-}
-
-async function signInWithEmail(email, password) {
-  const sb = getSupabase();
-  if (!sb) { showToast('Auth not configured'); return; }
-  const { data, error } = await sb.auth.signInWithPassword({ email, password });
-  if (error) { showToast('❌ ' + error.message); return; }
-  currentUser = data.user;
-  closeLoginModal();
-  showToast('✅ Signed in!');
-}
-
-async function signUpWithEmail(email, password) {
-  const sb = getSupabase();
-  if (!sb) { showToast('Auth not configured'); return; }
-  const { error } = await sb.auth.signUp({ email, password });
-  if (error) { showToast('❌ ' + error.message); return; }
-  closeLoginModal();
-  showToast('📧 Check your email to confirm your account');
-}
-
-async function authSignOut() {
-  const sb = getSupabase();
-  if (sb) await sb.auth.signOut();
-  currentUser = null; isPremium = false;
-  localStorage.removeItem('zc_premium');
-  updateUI();
-  showToast('Signed out');
-}
-
-// Called when user clicks Subscribe in the premium modal
-async function startCheckout() {
-  const emailInput = document.getElementById('checkoutEmail');
-  const errEl      = document.getElementById('checkoutError');
-  const btn        = document.getElementById('checkoutBtn');
-  const email      = emailInput?.value.trim();
-
-  if (!email || !email.includes('@')) {
-    errEl.textContent = 'Please enter a valid email address.';
-    errEl.style.display = 'block';
-    emailInput.focus();
-    return;
-  }
-
-  errEl.style.display = 'none';
-  btn.textContent = '⏳ Redirecting to checkout…';
-  btn.disabled    = true;
-
-  try {
-    const res = await fetch('/.netlify/functions/create-checkout', {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ email }),
-    });
-    const data = await res.json();
-
-    if (data.url) {
-      // Save email so we can check premium status after redirect back
-      localStorage.setItem('zc_email', email);
-      window.location.href = data.url;
-    } else {
-      throw new Error(data.error || 'Checkout failed');
-    }
-  } catch (err) {
-    errEl.textContent = 'Payment service unavailable. Please try again.';
-    errEl.style.display = 'block';
-    btn.textContent = '🔒 Subscribe — $5/month';
-    btn.disabled    = false;
-  }
-}
-
-// Check premium status from Supabase (called on load and after login)
-async function checkPremiumStatus(email) {
-  if (!email) return false;
-  try {
-    const res = await fetch('/.netlify/functions/check-premium', {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ email }),
-    });
-    const data = await res.json();
-    return data.premium === true;
-  } catch {
-    return false;
-  }
-}
-
-// Handle return from Stripe checkout (?premium=success)
-async function handleStripeReturn() {
-  const params  = new URLSearchParams(window.location.search);
-  const status  = params.get('premium');
-  const email   = localStorage.getItem('zc_email');
-
-  if (status === 'success' && email) {
-    // Verify with backend
-    const premium = await checkPremiumStatus(email);
-    if (premium) {
-      isPremium = true;
-      localStorage.setItem('zc_premium', 'true');
-      updateUI();
-      showToast('🎉 Welcome to ZoneClock Premium!');
-    } else {
-      // Stripe confirmed, wait for webhook — optimistically activate
-      isPremium = true;
-      localStorage.setItem('zc_premium', 'true');
-      updateUI();
-      showToast('✅ Payment received! Premium activated.');
-    }
-    // Clean URL
-    window.history.replaceState({}, '', window.location.pathname);
-  } else if (status === 'cancelled') {
-    showToast('Payment cancelled — you can upgrade anytime.');
-    window.history.replaceState({}, '', window.location.pathname);
-  }
-}
-
-// On load: check if returning from Stripe, and re-verify premium on login
-window.addEventListener('load', () => {
-  handleStripeReturn();
-
-  // If logged-in email is stored, re-verify premium status silently
-  const storedEmail = localStorage.getItem('zc_email');
-  if (storedEmail && isPremium) {
-    checkPremiumStatus(storedEmail).then(verified => {
-      if (!verified && isPremium) {
-        // Revoke if Supabase says not premium
-        isPremium = false;
-        localStorage.setItem('zc_premium', 'false');
-        updateUI();
-      }
-    });
-  }
-});
-(function() {
-  const urlParams = new URLSearchParams(window.location.search);
-  const tabParam = urlParams.get('tab');
-  if (tabParam) {
-    const btn = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.getAttribute('onclick') && b.getAttribute('onclick').includes(`'${tabParam}'`));
-    if (btn) btn.click();
-  }
-})();
-
-  if (tabParam) {
-    const btn = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.getAttribute('onclick') && b.getAttribute('onclick').includes(`'${tabParam}'`));
-    if (btn) btn.click();
-  }
-})();
-
-/* ═══════════════════════════════════════
-   CALENDAR CONVERTER — 11 calendar systems
-   All algorithms from scratch, no library.
-═══════════════════════════════════════ */
-
 function gregorianToJDN(y,m,d){const a=Math.floor((14-m)/12);const yr=y+4800-a;const mo=m+12*a-3;return d+Math.floor((153*mo+2)/5)+365*yr+Math.floor(yr/4)-Math.floor(yr/100)+Math.floor(yr/400)-32045;}
 function jdnToGregorian(jdn){const a=jdn+32044;const b=Math.floor((4*a+3)/146097);const c=a-Math.floor(146097*b/4);const d=Math.floor((4*c+3)/1461);const e=c-Math.floor(1461*d/4);const m2=Math.floor((5*e+2)/153);return{d:e-Math.floor((153*m2+2)/5)+1,m:m2+3-12*Math.floor(m2/10),y:100*b+d-4800+Math.floor(m2/10)};}
-
-/* Hijri */
-function jdnToHijri(jdn){const l=jdn-1948440+10632;const n=Math.floor((l-1)/10631);const ll=l-10631*n+354;const j=Math.floor((10985-ll)/5316)*Math.floor(50*ll/17719)+Math.floor(ll/5670)*Math.floor(43*ll/15238);const lll=ll-Math.floor((30-j)/15)*Math.floor(17719*j/50)-Math.floor(j/16)*Math.floor(15238*j/43)+29;return{y:30*n+j-30,m:Math.floor(24*lll/709),d:lll-Math.floor(709*Math.floor(24*lll/709)/24)};}
+function jdnToHijri(jdn){const l=jdn-1948440+10632;const n=Math.floor((l-1)/10631);const ll=l-10631*n+354;const j=Math.floor((10985-ll)/5316)*Math.floor(50*ll/17719)+Math.floor(ll/5670)*Math.floor(43*ll/15238);const lll=ll-Math.floor((30-j)/15)*Math.floor(17719*j/50)-Math.floor(j/16)*Math.floor(15238*j/43)+29;const mo=Math.floor(24*lll/709);return{y:30*n+j-30,m:mo,d:lll-Math.floor(709*mo/24)};}
 function hijriToJDN(y,m,d){return Math.floor((11*y+3)/30)+354*y+30*m-Math.floor((m-1)/2)+d+1948440-385;}
-const HIJRI_MONTHS=['Muharram','Ṣafar','Rabīʿ al-Awwal','Rabīʿ al-Thānī','Jumādā al-Ūlā','Jumādā al-Thānī','Rajab','Shaʿbān','Ramaḍān','Shawwāl','Dhū al-Qaʿdah','Dhū al-Ḥijjah'];
-
-/* Hebrew */
-function hebrewDelay1(y){const months=Math.floor((235*y-234)/19);const parts=12084+13753*months;let day=months*29+Math.floor(parts/25920);if((3*(day+1))%7<3)day++;return day;}
-function hebrewDelay2(y){const last=hebrewDelay1(y-1);const present=hebrewDelay1(y);const next=hebrewDelay1(y+1);if(next-present===356)return 2;if(present-last===382)return 1;return 0;}
+function hebrewDelay1(y){const mo=Math.floor((235*y-234)/19);const pts=12084+13753*mo;let day=mo*29+Math.floor(pts/25920);if((3*(day+1))%7<3)day++;return day;}
+function hebrewDelay2(y){const l=hebrewDelay1(y-1),p=hebrewDelay1(y),n=hebrewDelay1(y+1);if(n-p===356)return 2;if(p-l===382)return 1;return 0;}
 function hebrewLeapYear(y){return(7*y+1)%19<7;}
-function hebrewLastMonth(y){return hebrewLeapYear(y)?13:12;}
 function hebrewDaysInYear(y){return hebrewToJDN(y+1,7,1)-hebrewToJDN(y,7,1);}
 function hebrewDaysInMonth(m,y){if([1,3,5,7,11,13].includes(m))return 30;if([4,6,10,12].includes(m))return 29;if(m===8)return hebrewDaysInYear(y)%10===5?30:29;if(m===9)return hebrewDaysInYear(y)%10===3?29:30;if(m===2)return hebrewLeapYear(y)?29:0;return 29;}
-function hebrewToJDN(y,m,d){const months=hebrewLastMonth(y);let jdn=347997+hebrewDelay1(y)+hebrewDelay2(y)+d+1;for(let i=7;i<=months;i++)if(i!==m)jdn+=hebrewDaysInMonth(i,y);for(let i=1;i<m;i++)jdn+=hebrewDaysInMonth(i,y);return jdn;}
-function jdnToHebrew(jdn){let year=Math.floor((jdn-347997)/365.25)+1;while(hebrewToJDN(year+1,7,1)<=jdn)year++;let month=jdn<hebrewToJDN(year,1,1)?7:1;while(jdn>=hebrewToJDN(year,month,hebrewDaysInMonth(month,year)))month++;return{y:year,m:month,d:jdn-hebrewToJDN(year,month,1)+1};}
-const HEBREW_MONTHS=['Nisan','Iyyar','Sivan','Tammuz','Av','Elul','Tishri','Marcheshvan','Kislev','Tevet','Shevat','Adar','Adar II'];
-
-/* Persian (Jalali) */
+function hebrewToJDN(y,m,d){const mo=hebrewLeapYear(y)?13:12;let j=347997+hebrewDelay1(y)+hebrewDelay2(y)+d+1;for(let i=7;i<=mo;i++)if(i!==m)j+=hebrewDaysInMonth(i,y);for(let i=1;i<m;i++)j+=hebrewDaysInMonth(i,y);return j;}
+function jdnToHebrew(jdn){let y=Math.floor((jdn-347997)/365.25)+1;while(hebrewToJDN(y+1,7,1)<=jdn)y++;let m=jdn<hebrewToJDN(y,1,1)?7:1;while(jdn>=hebrewToJDN(y,m,hebrewDaysInMonth(m,y)))m++;return{y,m,d:jdn-hebrewToJDN(y,m,1)+1};}
 function persianToJDN(y,m,d){const ep=((y-474)%2820)+474;return 1948319+365*(y-474)+Math.floor((682*ep-110)/2816)+Math.floor(ep/4)+474*365+(m<=6?(m-1)*31:(m-1)*30+6)+d;}
-function jdnToPersian(jdn){let y=Math.floor((jdn-1948320)/365.25)+1;if(jdn<persianToJDN(y,1,1))y--;const doy=jdn-persianToJDN(y,1,1);let m,d;if(doy<6*31){m=Math.floor(doy/31)+1;d=(doy%31)+1;}else{const r=doy-6*31;m=Math.floor(r/30)+7;d=(r%30)+1;}return{y,m,d};}
-const PERSIAN_MONTHS=['Farvardin','Ordibehesht','Khordad','Tir','Mordad','Shahrivar','Mehr','Aban','Azar','Dey','Bahman','Esfand'];
-
-/* Ethiopian */
+function jdnToPersian(jdn){let y=Math.floor((jdn-1948320)/365.25)+1;if(jdn<persianToJDN(y,1,1))y--;const doy=jdn-persianToJDN(y,1,1);let m,d;if(doy<186){m=Math.floor(doy/31)+1;d=doy%31+1;}else{m=Math.floor((doy-186)/30)+7;d=(doy-186)%30+1;}return{y,m,d};}
 function ethiopianToJDN(y,m,d){return 1723856+365*(y-1)+Math.floor(y/4)+30*(m-1)+d-1;}
-function jdnToEthiopian(jdn){const r=(jdn-1723856)%1461;const n=(r%365)+365*Math.floor(r/1460);const y=4*Math.floor((jdn-1723856)/1461)+Math.floor(r/365)-Math.floor(r/1460);return{y,m:Math.min(Math.floor(n/30)+1,13),d:(n%30)+1};}
-const ETHIOPIAN_MONTHS=['Mäskäräm','Ṭəqəmt','Ḫədar','Taḫśaś','Ṭərr','Yäkatit','Mägabit','Miyazya','Gənbot','Säne','Ḥamle','Nähase','Ṗagume'];
-
-/* Coptic */
-function jdnToCoptic(jdn){const r=(jdn-1825030)%1461;const n=(r%365)+365*Math.floor(r/1460);const y=4*Math.floor((jdn-1825030)/1461)+Math.floor(r/365)-Math.floor(r/1460);return{y,m:Math.min(Math.floor(n/30)+1,13),d:(n%30)+1};}
-const COPTIC_MONTHS=['Thout','Paopi','Hathor','Koiak','Tobi','Meshir','Paremhat','Paremoude','Pashons','Paoni','Epep','Mesori','Pi Kogi Enavot'];
-
-/* Julian */
-function jdnToJulian(jdn){const b=jdn+1524;const c=Math.floor((b-122.1)/365.25);const d2=Math.floor(365.25*c);const e=Math.floor((b-d2)/30.6001);const day=b-d2-Math.floor(30.6001*e);const month=e<14?e-1:e-13;return{y:month>2?c-4716:c-4715,m:month,d:day};}
-
-/* Thai Buddhist */
+function jdnToEthiopian(jdn){const r=(jdn-1723856)%1461;const n=(r%365)+365*Math.floor(r/1460);const y=4*Math.floor((jdn-1723856)/1461)+Math.floor(r/365)-Math.floor(r/1460);return{y,m:Math.min(Math.floor(n/30)+1,13),d:n%30+1};}
+function jdnToCoptic(jdn){const r=(jdn-1825030)%1461;const n=(r%365)+365*Math.floor(r/1460);const y=4*Math.floor((jdn-1825030)/1461)+Math.floor(r/365)-Math.floor(r/1460);return{y,m:Math.min(Math.floor(n/30)+1,13),d:n%30+1};}
+function copticToJDN(y,m,d){return 1825030+365*(y-1)+Math.floor(y/4)+30*(m-1)+d-1;}
+function jdnToJulian(jdn){const b=jdn+1524;const c=Math.floor((b-122.1)/365.25);const d2=Math.floor(365.25*c);const e=Math.floor((b-d2)/30.6001);const day=b-d2-Math.floor(30.6001*e);const mo=e<14?e-1:e-13;return{y:mo>2?c-4716:c-4715,m:mo,d:day};}
 function jdnToBuddhist(jdn){const g=jdnToGregorian(jdn);return{y:g.y+543,m:g.m,d:g.d};}
-
-/* Japanese Era */
-function jdnToJapanese(jdn){const g=jdnToGregorian(jdn);const eras=[{name:'Reiwa (令和)',start:2019},{name:'Heisei (平成)',start:1989},{name:'Showa (昭和)',start:1926},{name:'Taisho (大正)',start:1912},{name:'Meiji (明治)',start:1868}];for(const e of eras)if(g.y>=e.start)return{era:e.name,y:g.y-e.start+1,m:g.m,d:g.d};return{era:'Pre-Meiji',y:g.y,m:g.m,d:g.d};}
-
-/* Bahá'í */
-const BAHAI_MONTHS=['Bahá','Jalál','Jamál','ʻAẓamat','Núr','Raḥmat','Kalimát','Kamál','Asmáʼ','ʻIzzat','Mashíyyat','ʻIlm','Qudrat','Qawl','Masáʼil','Sharaf','Sulṭán','Mulk','ʻAláʼ'];
-function jdnToBahai(jdn){const g=jdnToGregorian(jdn);let year=g.y-1844;let nrJDN=gregorianToJDN(g.y,3,21);if(jdn<nrJDN){year--;nrJDN=gregorianToJDN(g.y-1,3,21);}const doy=jdn-nrJDN;if(doy>=342)return{y:year+1,m:0,d:doy-342+1,special:'Ayyám-Há'};return{y:year+1,m:Math.floor(doy/19)+1,d:(doy%19)+1};}
-
-const WEEKDAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-const WEEKDAYS_AR=['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
-const GREG_MONTHS=['','January','February','March','April','May','June','July','August','September','October','November','December'];
+function jdnToJapanese(jdn){const g=jdnToGregorian(jdn);const eras=[{n:'Reiwa (令和)',s:2019},{n:'Heisei (平成)',s:1989},{n:'Showa (昭和)',s:1926},{n:'Taisho (大正)',s:1912},{n:'Meiji (明治)',s:1868}];for(const e of eras)if(g.y>=e.s)return{era:e.n,y:g.y-e.s+1,m:g.m,d:g.d};return{era:'Pre-Meiji',y:g.y,m:g.m,d:g.d};}
+const BAHAI_M=['Bahá','Jalál','Jamál','ʻAẓamat','Núr','Raḥmat','Kalimát','Kamál','Asmáʼ','ʻIzzat','Mashíyyat','ʻIlm','Qudrat','Qawl','Masáʼil','Sharaf','Sulṭán','Mulk','ʻAláʼ'];
+function jdnToBahai(jdn){const g=jdnToGregorian(jdn);let y=g.y-1844;let nr=gregorianToJDN(g.y,3,21);if(jdn<nr){y--;nr=gregorianToJDN(g.y-1,3,21);}const doy=jdn-nr;if(doy>=342)return{y:y+1,m:0,d:doy-342+1,sp:'Ayyám-Há'};return{y:y+1,m:Math.floor(doy/19)+1,d:doy%19+1};}
+const HIJRI_M=['Muharram','Ṣafar','Rabīʿ al-Awwal','Rabīʿ al-Thānī','Jumādā al-Ūlā','Jumādā al-Thānī','Rajab','Shaʿbān','Ramaḍān','Shawwāl','Dhū al-Qaʿdah','Dhū al-Ḥijjah'];
+const PERSIAN_M=['Farvardin','Ordibehesht','Khordad','Tir','Mordad','Shahrivar','Mehr','Aban','Azar','Dey','Bahman','Esfand'];
+const HEBREW_M=['Nisan','Iyyar','Sivan','Tammuz','Av','Elul','Tishri','Marcheshvan','Kislev','Tevet','Shevat','Adar','Adar II'];
+const ETHIOPIAN_M=['Mäskäräm','Ṭəqəmt','Ḫədar','Taḫśaś','Ṭərr','Yäkatit','Mägabit','Miyazya','Gənbot','Säne','Ḥamle','Nähase','Ṗagume'];
+const COPTIC_M=['Thout','Paopi','Hathor','Koiak','Tobi','Meshir','Paremhat','Paremoude','Pashons','Paoni','Epep','Mesori','Pi Kogi Enavot'];
+const WD=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const WD_AR=['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+const GM=['','January','February','March','April','May','June','July','August','September','October','November','December'];
 
 function setCalToday(){const t=new Date();setCalDate(t.getFullYear(),t.getMonth()+1,t.getDate());}
 function setCalYesterday(){const j=gregorianToJDN(...todayYMD())-1;const g=jdnToGregorian(j);setCalDate(g.y,g.m,g.d);}
 function setCalTomorrow(){const j=gregorianToJDN(...todayYMD())+1;const g=jdnToGregorian(j);setCalDate(g.y,g.m,g.d);}
 function todayYMD(){const t=new Date();return[t.getFullYear(),t.getMonth()+1,t.getDate()];}
-
 function setCalDate(y,m,d){
   const inp=document.getElementById('calInput');
-  if(inp) inp.value=`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+  if(inp)inp.value=`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
   const manDiv=document.getElementById('calManualInput');
-  if(manDiv) manDiv.style.display='none';
+  if(manDiv)manDiv.style.display='none';
   const sys=document.getElementById('calInputSystem');
-  if(sys) sys.value='gregorian';
+  if(sys)sys.value='gregorian';
   convertCalendar();
 }
-
 function convertCalendar(){
   const inp=document.getElementById('calInput');
   const sys=document.getElementById('calInputSystem');
-  if(!inp||!sys) return;
+  if(!inp||!sys)return;
   const manDiv=document.getElementById('calManualInput');
   const hint=document.getElementById('calManHint');
   if(sys.value!=='gregorian'){
-    if(manDiv) manDiv.style.display='flex';
-    const hints={hijri:'Enter Hijri date (AH)',hebrew:'Enter Hebrew date (AM)',persian:'Enter Solar Hijri / Jalali date (SH)',ethiopian:'Enter Ethiopian date (EC) — 13 months',coptic:'Enter Coptic date (AM) — 13 months'};
-    if(hint) hint.textContent=hints[sys.value]||'';
+    if(manDiv)manDiv.style.display='flex';
+    const hints={hijri:'Enter Hijri date (AH) — year · month 1-12 · day',persian:'Enter Solar Hijri/Jalali date (SH)',hebrew:'Enter Hebrew date (AM)',ethiopian:'Enter Ethiopian date — 13 months per year',coptic:'Enter Coptic date — 13 months per year'};
+    if(hint)hint.textContent=hints[sys.value]||'';
     return;
   }
-  if(manDiv) manDiv.style.display='none';
-  if(!inp.value) return;
+  if(manDiv)manDiv.style.display='none';
+  if(!inp.value)return;
   const [y,m,d]=inp.value.split('-').map(Number);
-  if(!y||!m||!d||isNaN(y)) return;
-  renderCalendarResults(gregorianToJDN(y,m,d));
+  if(!y||!m||!d||isNaN(y))return;
+  renderCalResults(gregorianToJDN(y,m,d));
 }
-
 function convertCalendarManual(){
   const sys=document.getElementById('calInputSystem')?.value;
   const day=parseInt(document.getElementById('calManDay')?.value);
   const month=parseInt(document.getElementById('calManMonth')?.value);
   const year=parseInt(document.getElementById('calManYear')?.value);
-  if(!day||!month||!year||isNaN(year)) return;
-  let jdn;
+  if(!day||!month||!year||isNaN(year))return;
   try{
+    let jdn;
     switch(sys){
       case 'hijri':     jdn=hijriToJDN(year,month,day); break;
       case 'persian':   jdn=persianToJDN(year,month,day); break;
       case 'ethiopian': jdn=ethiopianToJDN(year,month,day); break;
+      case 'coptic':    jdn=copticToJDN(year,month,day); break;
       case 'hebrew':    jdn=hebrewToJDN(year,month,day); break;
-      case 'coptic':    jdn=1825030+365*(year-1)+Math.floor(year/4)+30*(month-1)+day-1; break;
       default: return;
     }
     if(jdn&&!isNaN(jdn)){
       const g=jdnToGregorian(jdn);
       const inp=document.getElementById('calInput');
-      if(inp) inp.value=`${g.y}-${String(g.m).padStart(2,'0')}-${String(g.d).padStart(2,'0')}`;
-      renderCalendarResults(jdn);
+      if(inp)inp.value=`${g.y}-${String(g.m).padStart(2,'0')}-${String(g.d).padStart(2,'0')}`;
+      renderCalResults(jdn);
     }
-  }catch(e){/* ignore invalid combos */}
+  }catch(e){}
 }
-
-function renderCalendarResults(jdn){
-  const g=jdnToGregorian(jdn);
-  const hj=jdnToHijri(jdn);
-  const hb=jdnToHebrew(jdn);
-  const pr=jdnToPersian(jdn);
-  const et=jdnToEthiopian(jdn);
-  const co=jdnToCoptic(jdn);
-  const ju=jdnToJulian(jdn);
-  const bu=jdnToBuddhist(jdn);
-  const ja=jdnToJapanese(jdn);
-  const bh=jdnToBahai(jdn);
+function renderCalResults(jdn){
+  const g=jdnToGregorian(jdn),hj=jdnToHijri(jdn),hb=jdnToHebrew(jdn);
+  const pr=jdnToPersian(jdn),et=jdnToEthiopian(jdn),co=jdnToCoptic(jdn);
+  const ju=jdnToJulian(jdn),bu=jdnToBuddhist(jdn),ja=jdnToJapanese(jdn),bh=jdnToBahai(jdn);
   const dow=(jdn+1)%7;
   const pad=n=>String(n).padStart(2,'0');
-
   const cards=[
-    {name:'Gregorian (CE)',flag:'🌍',date:`${g.d} ${GREG_MONTHS[g.m]} ${g.y}`,sub:`${WEEKDAYS[dow]} · ${g.y}-${pad(g.m)}-${pad(g.d)}`,primary:true},
-    {name:'Hijri (Islamic)',flag:'☪️',date:`${hj.d} ${HIJRI_MONTHS[hj.m-1]||''} ${hj.y} AH`,sub:`${WEEKDAYS_AR[dow]} — Lunar calendar`},
-    {name:'Persian Solar Hijri',flag:'🇮🇷',date:`${pr.d} ${PERSIAN_MONTHS[(pr.m-1)%12]||''} ${pr.y} SH`,sub:'Jalali · Iran & Afghanistan'},
-    {name:'Hebrew (Jewish)',flag:'✡️',date:`${hb.d} ${HEBREW_MONTHS[(hb.m-1)%13]||''} ${hb.y} AM`,sub:`Anno Mundi · ${hebrewLeapYear(hb.y)?'Leap (13 months)':'Regular (12 months)'}`},
-    {name:'Ethiopian',flag:'🇪🇹',date:`${et.d} ${ETHIOPIAN_MONTHS[(et.m-1)%13]||''} ${et.y} EC`,sub:"Ge'ez · ~7–8 years behind Gregorian"},
-    {name:'Coptic',flag:'✝️',date:`${co.d} ${COPTIC_MONTHS[(co.m-1)%13]||''} ${co.y} AM`,sub:'Coptic Orthodox Church'},
-    {name:'Thai Buddhist',flag:'🇹🇭',date:`${bu.d} ${GREG_MONTHS[bu.m]} ${bu.y} BE`,sub:'Buddhist Era · Gregorian +543'},
-    {name:'Japanese Era',flag:'🇯🇵',date:`${ja.era} ${ja.y}, ${GREG_MONTHS[ja.m]} ${ja.d}`,sub:'Imperial Japanese calendar'},
-    {name:"Bahá'í",flag:'⭐',date:bh.special?`${bh.d} ${bh.special} ${bh.y} BE`:`${bh.d} ${BAHAI_MONTHS[(bh.m-1)%19]||''} ${bh.y} BE`,sub:"Badíʻ · 19 months × 19 days"},
-    {name:'Julian (Old Style)',flag:'🏛️',date:`${ju.d} ${GREG_MONTHS[ju.m]||''} ${ju.y} OS`,sub:`Julian Day No. ${jdn}`},
+    {name:'Gregorian (CE)',flag:'🌍',date:`${g.d} ${GM[g.m]} ${g.y}`,sub:`${WD[dow]} · ${g.y}-${pad(g.m)}-${pad(g.d)}`,primary:true},
+    {name:'Hijri (Islamic)',flag:'☪️',date:`${hj.d} ${HIJRI_M[hj.m-1]||''} ${hj.y} AH`,sub:`${WD_AR[dow]}`},
+    {name:'Persian Solar Hijri',flag:'🇮🇷',date:`${pr.d} ${PERSIAN_M[(pr.m-1)%12]||''} ${pr.y} SH`,sub:'Jalali · Iran & Afghanistan'},
+    {name:'Hebrew (Jewish)',flag:'✡️',date:`${hb.d} ${HEBREW_M[(hb.m-1)%13]||''} ${hb.y} AM`,sub:`Anno Mundi · ${hebrewLeapYear(hb.y)?'Leap year':'Regular year'}`},
+    {name:'Ethiopian',flag:'🇪🇹',date:`${et.d} ${ETHIOPIAN_M[(et.m-1)%13]||''} ${et.y} EC`,sub:"Ge'ez · ~7–8 yrs behind Gregorian"},
+    {name:'Coptic',flag:'✝️',date:`${co.d} ${COPTIC_M[(co.m-1)%13]||''} ${co.y} AM`,sub:'Coptic Orthodox Church'},
+    {name:'Thai Buddhist',flag:'🇹🇭',date:`${bu.d} ${GM[bu.m]} ${bu.y} BE`,sub:'Buddhist Era · +543 years'},
+    {name:'Japanese Era',flag:'🇯🇵',date:`${ja.era} ${ja.y}, ${GM[ja.m]} ${ja.d}`,sub:'Imperial Japanese calendar'},
+    {name:"Bahá'í",flag:'⭐',date:bh.sp?`${bh.d} ${bh.sp} ${bh.y} BE`:`${bh.d} ${BAHAI_M[(bh.m-1)%19]||''} ${bh.y} BE`,sub:"Badíʻ · 19×19 calendar"},
+    {name:'Julian (Old Style)',flag:'🏛️',date:`${ju.d} ${GM[ju.m]||''} ${ju.y} OS`,sub:`Julian Day No. ${jdn}`},
     {name:'Unix Timestamp',flag:'💻',date:`${Math.floor((jdn-2440588)*86400)}`,sub:'Seconds since 1 Jan 1970 UTC'},
   ];
-
   const grid=document.getElementById('calResults');
-  if(!grid) return;
-  grid.innerHTML=cards.map(c=>`
-    <div class="cal-card${c.primary?' primary':''}">
-      <div class="cal-card-flag">${c.flag}</div>
-      <div class="cal-card-name">${c.name}</div>
-      <div class="cal-card-date">${c.date}</div>
-      <div class="cal-card-sub">${c.sub}</div>
-      <button onclick="navigator.clipboard?.writeText('${c.date.replace(/'/g,"\\\\'")}').then(()=>showToast('Copied!'))"
-        style="margin-top:6px;background:none;border:none;color:var(--muted);font-size:11px;font-family:var(--mono);cursor:pointer;padding:2px 6px;border-radius:4px;transition:color 0.15s;"
-        onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--muted)'">📋 copy</button>
-    </div>`).join('');
-
+  if(!grid)return;
+  grid.innerHTML=cards.map(c=>`<div class="cal-card${c.primary?' primary':''}">
+    <div class="cal-card-flag">${c.flag}</div>
+    <div class="cal-card-name">${c.name}</div>
+    <div class="cal-card-date">${c.date}</div>
+    <div class="cal-card-sub">${c.sub}</div>
+    <button onclick="navigator.clipboard?.writeText('${c.date.replace(/'/g,"\'")}').then(()=>showToast('Copied!'))" style="margin-top:6px;background:none;border:none;color:var(--muted);font-size:11px;font-family:var(--mono);cursor:pointer;padding:0;transition:color 0.15s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--muted)'">📋 copy</button>
+  </div>`).join('');
   const isLeap=(g.y%4===0&&g.y%100!==0)||g.y%400===0;
   const doy=jdn-gregorianToJDN(g.y,1,1)+1;
   const rem=(isLeap?366:365)-doy;
-  const wk=Math.ceil((doy+new Date(g.y,0,1).getDay())/7);
   const todayJDN=gregorianToJDN(...todayYMD());
   const diff=jdn-todayJDN;
-  const diffStr=diff===0?'Today':diff>0?`+${diff} days`:`${diff} days`;
-
   const infoEl=document.getElementById('calDayInfo');
   const infoCt=document.getElementById('calDayInfoContent');
   if(infoEl&&infoCt){
     infoEl.style.display='block';
     infoCt.innerHTML=[
-      {label:'Day of Week',value:WEEKDAYS[dow]},
-      {label:'Day of Year',value:`${doy} of ${isLeap?366:365}`},
-      {label:'Days Remaining',value:`${rem} days left`},
-      {label:'ISO Week',value:`Week ${wk}`},
-      {label:'Gregorian Leap',value:isLeap?'✓ Leap year':'✗ Regular year'},
-      {label:'Hijri Leap',value:[2,5,7,10,13,16,18,21,24,26,29].includes(hj.y%30)?'✓ Hijri leap year':'✗ Hijri regular year'},
-      {label:'Julian Day No.',value:jdn},
-      {label:'Days from Today',value:diffStr},
-    ].map(item=>`<div class="cal-info-item"><div class="cal-info-label">${item.label}</div><div class="cal-info-value">${item.value}</div></div>`).join('');
+      {l:'Day of Week',v:WD[dow]},
+      {l:'Day of Year',v:`${doy} of ${isLeap?366:365}`},
+      {l:'Days Remaining',v:`${rem} days left`},
+      {l:'Gregorian Leap',v:isLeap?'✓ Leap year':'✗ Regular year'},
+      {l:'Hijri Leap',v:[2,5,7,10,13,16,18,21,24,26,29].includes(hj.y%30)?'✓ Hijri leap':'✗ Hijri regular'},
+      {l:'Julian Day No.',v:jdn},
+      {l:'Days from Today',v:diff===0?'Today':diff>0?`+${diff} days`:`${diff} days`},
+    ].map(x=>`<div class="cal-info-item"><div class="cal-info-label">${x.l}</div><div class="cal-info-value">${x.v}</div></div>`).join('');
   }
 }
 
 /* ═══════════════════════════════════════
-   INSTALL POPUP
+   DESK VIEW
 ═══════════════════════════════════════ */
-let deferredInstallPrompt = null;
+let deskActive = false;
+let deskBarTimer = null;
 
-window.addEventListener('beforeinstallprompt', e => {
-  e.preventDefault();
-  deferredInstallPrompt = e;
-  // Show popup after 3 seconds on Android
-  if (!isRunningAsPWA() && !sessionStorage.getItem('zc_install_dismissed')) {
-    setTimeout(() => showInstallPopup('android'), 3000);
-  }
-});
-
-function isRunningAsPWA() {
-  return window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+function enterDeskView() {
+  deskActive = true;
+  const ov = document.getElementById('deskOverlay');
+  ov.style.display = 'block';
+  if (ov.requestFullscreen) ov.requestFullscreen().catch(()=>{});
+  else if (ov.webkitRequestFullscreen) ov.webkitRequestFullscreen();
+  buildDeskLayout();
+  renderDesk();
+  ov.addEventListener('pointerdown', deskTap);
 }
 
-function getOS() {
-  const ua = navigator.userAgent;
-  if (/iPad|iPhone|iPod/.test(ua) && !window.MSStream) return 'ios';
-  if (/android/i.test(ua)) return 'android';
-  return 'desktop';
+function exitDeskView() {
+  deskActive = false;
+  document.getElementById('deskOverlay').style.display = 'none';
+  if (document.exitFullscreen) document.exitFullscreen().catch(()=>{});
+  else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+  // Return to desk tab
+  const btn = document.querySelector('.tab-btn:last-child');
+  const panel = document.getElementById('panel-deskview');
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  if(panel) panel.classList.add('active');
+  if(btn) btn.classList.add('active');
 }
 
-function showInstallPopup(type) {
-  if (isRunningAsPWA()) return;
-  if (sessionStorage.getItem('zc_install_dismissed')) return;
-  const popup = document.getElementById('installPopup');
-  if (!popup) return;
-  document.getElementById('installPopupAndroid').style.display = type === 'android' ? 'block' : 'none';
-  document.getElementById('installPopupIOS').style.display = type === 'ios' ? 'block' : 'none';
-  popup.style.display = 'flex';
+function deskTap() {
+  const bar = document.getElementById('deskBar');
+  bar.style.opacity = '1';
+  clearTimeout(deskBarTimer);
+  deskBarTimer = setTimeout(() => { bar.style.opacity = '0'; }, 3000);
 }
 
-function triggerInstall() {
-  if (!deferredInstallPrompt) return;
-  deferredInstallPrompt.prompt();
-  deferredInstallPrompt.userChoice.then(result => {
-    deferredInstallPrompt = null;
-    dismissInstallPopup();
-    if (result.outcome === 'accepted') showToast('✅ ZoneClock added to your home screen!');
+function buildDeskLayout() {
+  const grid = document.getElementById('deskGrid');
+  const bar  = document.getElementById('deskBar');
+  if (!grid || !bar) return;
+  requestAnimationFrame(() => {
+    const barH = bar.getBoundingClientRect().height || 60;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight - barH;
+    grid.style.top = barH + 'px';
+    const n = userZones.length;
+    if (n === 0) return;
+    let bestCols = 1, bestScore = 0;
+    for (let c = 1; c <= n; c++) {
+      const r = Math.ceil(n/c);
+      const score = Math.min(vw/c, vh/r);
+      if (score > bestScore) { bestScore = score; bestCols = c; }
+    }
+    const bestRows = Math.ceil(n / bestCols);
+    grid.style.gridTemplateColumns = `repeat(${bestCols}, 1fr)`;
+    grid.style.gridTemplateRows    = `repeat(${bestRows}, 1fr)`;
+    grid.style.gap = '1px';
+    grid.style.overflow = 'hidden';
+    grid.dataset.cw = Math.floor(vw / bestCols);
+    grid.dataset.ch = Math.floor(vh / bestRows);
+    grid.innerHTML = '';
+    renderDesk();
   });
 }
 
-function dismissInstallPopup() {
-  const popup = document.getElementById('installPopup');
-  if (popup) popup.style.display = 'none';
-  sessionStorage.setItem('zc_install_dismissed', '1');
+function renderDesk() {
+  if (!deskActive) return;
+  const grid = document.getElementById('deskGrid');
+  if (!grid) return;
+  const home = userZones.find(z=>z.home) || userZones[0];
+  if (home) {
+    const tp = getTimeParts(home.tz);
+    const te = document.getElementById('deskHomeTime');
+    if (te) te.textContent = hourFormat===12 ? `${tp.h12}:${tp.m}:${tp.s} ${tp.ampm} — ${home.label}` : `${String(tp.h).padStart(2,'0')}:${tp.m}:${tp.s} — ${home.label}`;
+  }
+  const cw = parseInt(grid.dataset.cw) || 200;
+  const ch = parseInt(grid.dataset.ch) || 200;
+  const analogSz = Math.round(Math.min(cw, ch) * 0.40);
+  const timeFz   = Math.max(14, Math.min(48, Math.round(cw * 0.13)));
+  const secFz    = Math.round(timeFz * 0.55);
+  const cityFz   = Math.max(10, Math.min(22, Math.round(cw * 0.085)));
+  const dateFz   = Math.max(9,  Math.min(13, Math.round(cw * 0.043)));
+  const gapSz    = Math.max(3,  Math.round(ch * 0.02));
+
+  if (grid.children.length !== userZones.length) {
+    grid.innerHTML = userZones.map((z,i) => {
+      const acc = z.home ? '#c8f060' : '#6077f0';
+      const tzS = z.tz.split('/').pop().replace(/_/g,' ');
+      return `<div id="dc-${i}" data-tz="${z.tz}" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:${gapSz}px;padding:${Math.max(6,Math.round(ch*0.035))}px ${Math.max(6,Math.round(cw*0.03))}px;border-right:1px solid rgba(255,255,255,0.05);border-bottom:1px solid rgba(255,255,255,0.05);background:radial-gradient(ellipse at 40% 30%,#1a1a28 0%,#0a0a10 100%);position:relative;overflow:hidden;">
+        <div style="font-size:${cityFz}px;font-weight:800;color:var(--text);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;">${z.label}${z.home?` <span style="font-size:${Math.max(7,cityFz*0.5)}px;font-family:var(--mono);color:${acc};background:rgba(200,240,96,0.12);border:1px solid rgba(200,240,96,0.25);padding:1px 5px;border-radius:6px;">HOME</span>`:''}</div>
+        <div style="font-family:var(--mono);font-size:${dateFz}px;color:var(--muted);text-align:center;">${tzS}</div>
+        <div id="da-${i}" style="width:${analogSz}px;height:${analogSz}px;flex-shrink:0;"></div>
+        <div id="dt-${i}" style="font-family:var(--mono);font-size:${timeFz}px;font-weight:300;letter-spacing:-1px;text-align:center;line-height:1;"></div>
+        <div id="dd-${i}" style="font-family:var(--mono);font-size:${dateFz}px;color:var(--muted);text-align:center;"></div>
+        <div id="do-${i}" style="font-family:var(--mono);font-size:${Math.max(8,dateFz-1)}px;color:var(--muted);opacity:0.6;text-align:center;"></div>
+      </div>`;
+    }).join('');
+  }
+
+  userZones.forEach((z,i) => {
+    const tp   = getTimeParts(z.tz);
+    const tEl  = document.getElementById(`dt-${i}`);
+    const dEl  = document.getElementById(`dd-${i}`);
+    const oEl  = document.getElementById(`do-${i}`);
+    const aEl  = document.getElementById(`da-${i}`);
+    if (!tEl) return;
+    const tStr = hourFormat===12
+      ? `${tp.h12}:${tp.m}<span style="font-size:${secFz}px;color:var(--muted);">:${tp.s}</span><span style="font-size:${Math.round(secFz*0.9)}px;color:var(--muted);margin-left:3px;">${tp.ampm}</span>`
+      : `${String(tp.h).padStart(2,'0')}:${tp.m}<span style="font-size:${secFz}px;color:var(--muted);">:${tp.s}</span>`;
+    if (tEl.innerHTML !== tStr) tEl.innerHTML = tStr;
+    const ds = formatDate(z.tz); if(dEl&&dEl.textContent!==ds) dEl.textContent=ds;
+    const off = getOffset(z.tz); if(oEl&&oEl.textContent!==off) oEl.textContent=off;
+    if (aEl) buildDeskClock(aEl, z.tz, z.home, analogSz);
+  });
 }
 
-// iOS: show after 4 seconds
-window.addEventListener('load', () => {
-  if (isRunningAsPWA()) return;
-  if (sessionStorage.getItem('zc_install_dismissed')) return;
-  if (getOS() === 'ios') setTimeout(() => showInstallPopup('ios'), 4000);
-});
+function buildDeskClock(container, tz, isHome, size) {
+  const acc = isHome ? '#c8f060' : '#7888ff';
+  const {hour, min, sec} = getClockAngles(tz);
+  const cx=60,cy=60,r=52;
+  const circ=2*Math.PI*r;
+  const dashLen=+(circ*parseInt(getTimeParts(tz).s)/60).toFixed(2);
+  if (!container.querySelector('svg')) {
+    const ticks=Array.from({length:12},(_,i)=>{const a=i*30*Math.PI/180;const isQ=i%3===0;const ou=r-2,in2=isQ?r-14:r-8;const x1=+(cx+Math.sin(a)*ou).toFixed(2),y1=+(cy-Math.cos(a)*ou).toFixed(2),x2=+(cx+Math.sin(a)*in2).toFixed(2),y2=+(cy-Math.cos(a)*in2).toFixed(2);return`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${isQ?acc:'rgba(255,255,255,0.3)'}" stroke-width="${isQ?3.5:1.5}" stroke-linecap="round"/>`;}).join('');
+    container.innerHTML=`<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" style="width:${size}px;height:${size}px;display:block;">
+      <defs>
+        <radialGradient id="bg${container.id}" cx="45%" cy="35%"><stop offset="0%" stop-color="#252535"/><stop offset="100%" stop-color="#07070e"/></radialGradient>
+        <filter id="gl${container.id}" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+      </defs>
+      <circle cx="${cx}" cy="${cy}" r="${r+6}" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="6"/>
+      <circle cx="${cx}" cy="${cy}" r="${r}" fill="url(#bg${container.id})"/>
+      <circle id="arc${container.id}" cx="${cx}" cy="${cy}" r="${r-4}" fill="none" stroke="${acc}" stroke-width="2" stroke-dasharray="${dashLen} ${circ}" stroke-linecap="round" opacity="0.4" transform="rotate(-90 ${cx} ${cy})"/>
+      ${ticks}
+      <g id="hh${container.id}" transform="rotate(${hour} ${cx} ${cy})"><line x1="${cx}" y1="${cy+12}" x2="${cx}" y2="${cy-33}" stroke="${acc}" stroke-width="4" stroke-linecap="round"/><line x1="${cx}" y1="${cy+8}" x2="${cx}" y2="${cy-31}" stroke="rgba(255,255,255,0.3)" stroke-width="1.2" stroke-linecap="round"/></g>
+      <g id="mh${container.id}" transform="rotate(${min} ${cx} ${cy})"><line x1="${cx}" y1="${cy+14}" x2="${cx}" y2="${cy-45}" stroke="rgba(235,235,248,0.95)" stroke-width="2.5" stroke-linecap="round"/></g>
+      <g id="sh${container.id}" transform="rotate(${sec} ${cx} ${cy})"><line x1="${cx}" y1="${cy+18}" x2="${cx}" y2="${cy-50}" stroke="${acc}" stroke-width="1" stroke-linecap="round" filter="url(#gl${container.id})"/><circle cx="${cx}" cy="${cy-38}" r="3" fill="none" stroke="${acc}" stroke-width="1.2"/></g>
+      <circle cx="${cx}" cy="${cy}" r="5" fill="#18182a" stroke="${acc}" stroke-width="1.5"/>
+      <circle cx="${cx}" cy="${cy}" r="2.5" fill="${acc}"/>
+    </svg>`;
+    container.dataset.uid=container.id;
+    return;
+  }
+  const svg=container.querySelector('svg');
+  const id=container.dataset.uid||container.id;
+  const get=n=>svg.getElementById(n+id);
+  get('arc')?.setAttribute('stroke-dasharray',`${dashLen} ${circ}`);
+  get('hh')?.setAttribute('transform',`rotate(${hour} ${cx} ${cy})`);
+  get('mh')?.setAttribute('transform',`rotate(${min}  ${cx} ${cy})`);
+  get('sh')?.setAttribute('transform',`rotate(${sec}  ${cx} ${cy})`);
+}
 
-window.addEventListener('appinstalled', () => { dismissInstallPopup(); showToast('✅ ZoneClock installed!'); });
+window.addEventListener('resize', ()=>{ if(deskActive){ document.getElementById('deskGrid').innerHTML=''; buildDeskLayout(); }});
+
+function showToast(msg) {
+  let t=document.getElementById('zcToast');
+  if(!t){t=document.createElement('div');t.id='zcToast';t.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:10px 20px;border-radius:10px;font-size:14px;z-index:9999;pointer-events:none;transition:opacity 0.3s;';document.body.appendChild(t);}
+  t.textContent=msg;t.style.opacity='1';
+  clearTimeout(t._t);t._t=setTimeout(()=>{t.style.opacity='0';},2200);
+}
+
+(function() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const tabParam = urlParams.get('tab');
+  if (tabParam) {
+    const btn = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.getAttribute('onclick').includes(`'${tabParam}'`));
+    if (btn) btn.click();
+  }
+})();
 </script>
-<!-- INSTALL POPUP MODAL -->
-<div id="installPopup" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:600;align-items:flex-end;justify-content:center;padding:0;backdrop-filter:blur(6px);">
-  <div style="background:var(--surface2);border:1px solid rgba(200,240,96,0.2);border-radius:22px 22px 0 0;padding:28px 24px calc(28px + env(safe-area-inset-bottom,0px));max-width:480px;width:100%;animation:slideUp 0.35s cubic-bezier(0.34,1.56,0.64,1);">
-    <div style="text-align:center;margin-bottom:20px;">
-      <img src="icon-192.png" style="width:64px;height:64px;border-radius:16px;margin-bottom:12px;">
-      <div style="font-size:20px;font-weight:800;margin-bottom:6px;">Add ZoneClock to your<br>Home Screen</div>
-      <div style="font-size:13px;color:var(--muted);line-height:1.6;">Get instant access, offline support and better alarm notifications — just like a native app.</div>
-    </div>
-
-    <!-- Android: one-tap install button -->
-    <div id="installPopupAndroid" style="display:none;">
-      <button onclick="triggerInstall()" style="width:100%;padding:16px;background:var(--accent);color:#0a0a0f;border:none;border-radius:14px;font-family:var(--font);font-weight:800;font-size:17px;cursor:pointer;margin-bottom:12px;-webkit-tap-highlight-color:transparent;touch-action:manipulation;">
-        ➕ Add to Home Screen
-      </button>
-    </div>
-
-    <!-- iOS: step-by-step instructions -->
-    <div id="installPopupIOS" style="display:none;">
-      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px;">
-        <div style="background:rgba(200,240,96,0.07);border:1px solid rgba(200,240,96,0.18);border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:12px;">
-          <span style="font-size:24px;flex-shrink:0;">1️⃣</span>
-          <span style="font-size:14px;">Tap the <strong>Share</strong> button <span style="font-size:18px;">⬆️</span> at the bottom of Safari</span>
-        </div>
-        <div style="background:rgba(200,240,96,0.07);border:1px solid rgba(200,240,96,0.18);border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:12px;">
-          <span style="font-size:24px;flex-shrink:0;">2️⃣</span>
-          <span style="font-size:14px;">Scroll down and tap <strong>Add to Home Screen</strong> <span style="font-size:18px;">➕</span></span>
-        </div>
-        <div style="background:rgba(200,240,96,0.07);border:1px solid rgba(200,240,96,0.18);border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:12px;">
-          <span style="font-size:24px;flex-shrink:0;">3️⃣</span>
-          <span style="font-size:14px;">Tap <strong>Add</strong> in the top right corner</span>
-        </div>
-      </div>
-    </div>
-
-    <button onclick="dismissInstallPopup()" style="width:100%;padding:13px;background:none;border:1px solid var(--border-hover);border-radius:12px;color:var(--muted);font-family:var(--font);font-size:14px;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;">
-      Maybe Later
-    </button>
-  </div>
-</div>
 </body>
 </html>
