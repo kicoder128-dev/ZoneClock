@@ -455,32 +455,43 @@
   <div id="panel-calendar" class="tab-panel">
     <div class="converter-box">
       <h3><span class="ch-icon">📅</span> Calendar Converter</h3>
-      <p style="font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.6;">Convert any date between 11 major calendar systems worldwide.</p>
-      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:18px 20px;margin-bottom:16px;">
-        <div style="font-family:var(--mono);font-size:9px;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">Input Date</div>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
-          <input type="date" id="calInput" class="conv-input" style="flex:1;min-width:160px;" oninput="convertCalendar()"/>
-          <select id="calInputSystem" class="conv-select" style="flex:1;min-width:160px;" onchange="convertCalendar()">
-            <option value="gregorian">Gregorian (CE)</option>
-            <option value="hijri">Hijri (Islamic) →</option>
-            <option value="persian">Persian / Jalali →</option>
-            <option value="hebrew">Hebrew (Jewish) →</option>
-            <option value="ethiopian">Ethiopian →</option>
-            <option value="coptic">Coptic →</option>
-          </select>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.6;">Enter a Gregorian (CE) date to see it converted to 10 other calendar systems.</p>
+
+      <!-- PRIMARY: Gregorian (CE) input — always the default flow -->
+      <div id="calGregorianBlock" style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:18px 20px;margin-bottom:16px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <div style="font-family:var(--mono);font-size:9px;letter-spacing:1.2px;text-transform:uppercase;color:var(--accent);">🌍 Gregorian (CE) Date</div>
+          <span onclick="toggleCalDirection()" style="font-size:11px;color:var(--muted);cursor:pointer;text-decoration:underline;-webkit-tap-highlight-color:transparent;">Convert from another calendar →</span>
         </div>
-        <div id="calManualInput" style="display:none;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
-          <input type="number" id="calManDay" placeholder="Day" min="1" max="30" class="conv-input" style="flex:1;min-width:70px;" oninput="convertCalendarManual()"/>
-          <input type="number" id="calManMonth" placeholder="Month" min="1" max="13" class="conv-input" style="flex:1;min-width:70px;" oninput="convertCalendarManual()"/>
-          <input type="number" id="calManYear" placeholder="Year" class="conv-input" style="flex:1;min-width:100px;" oninput="convertCalendarManual()"/>
-          <div id="calManHint" style="width:100%;font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:4px;"></div>
-        </div>
+        <input type="date" id="calInput" class="conv-input" style="width:100%;margin-bottom:12px;" oninput="convertCalendar()"/>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
           <button onclick="setCalToday()" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font);font-size:13px;padding:8px 14px;cursor:pointer;-webkit-tap-highlight-color:transparent;">📌 Today</button>
           <button onclick="setCalYesterday()" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font);font-size:13px;padding:8px 14px;cursor:pointer;-webkit-tap-highlight-color:transparent;">← Yesterday</button>
           <button onclick="setCalTomorrow()" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font);font-size:13px;padding:8px 14px;cursor:pointer;-webkit-tap-highlight-color:transparent;">Tomorrow →</button>
         </div>
       </div>
+
+      <!-- SECONDARY: reverse conversion — hidden by default -->
+      <div id="calReverseBlock" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:18px 20px;margin-bottom:16px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <div style="font-family:var(--mono);font-size:9px;letter-spacing:1.2px;text-transform:uppercase;color:var(--accent2);">🔄 Convert From Another Calendar</div>
+          <span onclick="toggleCalDirection()" style="font-size:11px;color:var(--muted);cursor:pointer;text-decoration:underline;-webkit-tap-highlight-color:transparent;">← Back to Gregorian input</span>
+        </div>
+        <select id="calInputSystem" class="conv-select" style="width:100%;margin-bottom:12px;" onchange="convertCalendarManual()">
+          <option value="hijri">Hijri (Islamic)</option>
+          <option value="persian">Persian / Jalali</option>
+          <option value="hebrew">Hebrew (Jewish)</option>
+          <option value="ethiopian">Ethiopian</option>
+          <option value="coptic">Coptic</option>
+        </select>
+        <div id="calManualInput" style="display:flex;flex-wrap:wrap;gap:8px;">
+          <input type="number" id="calManDay" placeholder="Day" min="1" max="30" class="conv-input" style="flex:1;min-width:70px;" oninput="convertCalendarManual()"/>
+          <input type="number" id="calManMonth" placeholder="Month" min="1" max="13" class="conv-input" style="flex:1;min-width:70px;" oninput="convertCalendarManual()"/>
+          <input type="number" id="calManYear" placeholder="Year" class="conv-input" style="flex:1;min-width:100px;" oninput="convertCalendarManual()"/>
+          <div id="calManHint" style="width:100%;font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:4px;"></div>
+        </div>
+      </div>
+
       <div style="font-family:var(--mono);font-size:10px;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);margin-bottom:12px;">Equivalent Dates</div>
       <div id="calResults" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(185px,1fr));gap:12px;"></div>
       <div id="calDayInfo" style="margin-top:20px;display:none;">
@@ -626,7 +637,14 @@ function switchTab(tab, btn) {
   if (btn) btn.classList.add('active');
   if (tab === 'converter') initConverter();
   if (tab === 'lookup') initMeetingLookup();
-  if (tab === 'calendar') { const ci = document.getElementById('calInput'); if (ci && !ci.value) setCalToday(); }
+  if (tab === 'calendar') {
+    const ci = document.getElementById('calInput');
+    if (ci && !ci.value) setCalToday();
+    // Always show Gregorian input as the default view when entering the tab
+    const greg = document.getElementById('calGregorianBlock');
+    const rev  = document.getElementById('calReverseBlock');
+    if (greg && rev) { greg.style.display = 'block'; rev.style.display = 'none'; }
+  }
   if (tab === 'deskview') { /* launch button inside panel */ }
 }
 
@@ -1325,6 +1343,21 @@ const WD=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'
 const WD_AR=['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
 const GM=['','January','February','March','April','May','June','July','August','September','October','November','December'];
 
+function toggleCalDirection(){
+  const greg = document.getElementById('calGregorianBlock');
+  const rev  = document.getElementById('calReverseBlock');
+  if (!greg || !rev) return;
+  const showingReverse = rev.style.display !== 'none';
+  greg.style.display = showingReverse ? 'block' : 'none';
+  rev.style.display  = showingReverse ? 'none'  : 'block';
+  if (showingReverse) {
+    // switched back to Gregorian mode
+    convertCalendar();
+  } else {
+    // switched to reverse mode — trigger conversion if fields already filled
+    convertCalendarManual();
+  }
+}
 function setCalToday(){const t=new Date();setCalDate(t.getFullYear(),t.getMonth()+1,t.getDate());}
 function setCalYesterday(){const j=gregorianToJDN(...todayYMD())-1;const g=jdnToGregorian(j);setCalDate(g.y,g.m,g.d);}
 function setCalTomorrow(){const j=gregorianToJDN(...todayYMD())+1;const g=jdnToGregorian(j);setCalDate(g.y,g.m,g.d);}
@@ -1332,26 +1365,11 @@ function todayYMD(){const t=new Date();return[t.getFullYear(),t.getMonth()+1,t.g
 function setCalDate(y,m,d){
   const inp=document.getElementById('calInput');
   if(inp)inp.value=`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-  const manDiv=document.getElementById('calManualInput');
-  if(manDiv)manDiv.style.display='none';
-  const sys=document.getElementById('calInputSystem');
-  if(sys)sys.value='gregorian';
   convertCalendar();
 }
 function convertCalendar(){
   const inp=document.getElementById('calInput');
-  const sys=document.getElementById('calInputSystem');
-  if(!inp||!sys)return;
-  const manDiv=document.getElementById('calManualInput');
-  const hint=document.getElementById('calManHint');
-  if(sys.value!=='gregorian'){
-    if(manDiv)manDiv.style.display='flex';
-    const hints={hijri:'Enter Hijri date (AH) — year · month 1-12 · day',persian:'Enter Solar Hijri/Jalali date (SH)',hebrew:'Enter Hebrew date (AM)',ethiopian:'Enter Ethiopian date — 13 months per year',coptic:'Enter Coptic date — 13 months per year'};
-    if(hint)hint.textContent=hints[sys.value]||'';
-    return;
-  }
-  if(manDiv)manDiv.style.display='none';
-  if(!inp.value)return;
+  if(!inp||!inp.value)return;
   const [y,m,d]=inp.value.split('-').map(Number);
   if(!y||!m||!d||isNaN(y))return;
   renderCalResults(gregorianToJDN(y,m,d));
@@ -1361,6 +1379,9 @@ function convertCalendarManual(){
   const day=parseInt(document.getElementById('calManDay')?.value);
   const month=parseInt(document.getElementById('calManMonth')?.value);
   const year=parseInt(document.getElementById('calManYear')?.value);
+  const hint=document.getElementById('calManHint');
+  const hints={hijri:'Enter Hijri date (AH) — month 1-12',persian:'Enter Solar Hijri / Jalali date (SH)',hebrew:'Enter Hebrew date (AM) — month 1-13',ethiopian:'Enter Ethiopian date (EC) — 13 months per year',coptic:'Enter Coptic date (AM) — 13 months per year'};
+  if(hint) hint.textContent = hints[sys] || '';
   if(!day||!month||!year||isNaN(year))return;
   try{
     let jdn;
