@@ -9,7 +9,6 @@ const CACHE_VERSION = 'zoneclock-v3';
 
 const ASSETS_TO_CACHE = [
   './index.html',
-  './index.html',
   './manifest.json',
   './favicon.ico',
   './icon-16.png',
@@ -61,15 +60,29 @@ self.addEventListener('activate', event => {
   self.clients.claim();
 });
 
-/* ── Fetch: cache-first for local, network-first for external ── */
+/* ── Fetch: network-first for HTML navigation, cache-first for assets ── */
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
 
-  // Always go to network for non-GET or chrome-extension requests
   if (event.request.method !== 'GET') return;
   if (url.protocol === 'chrome-extension:') return;
 
-  // For Google Fonts and other CDN assets — stale-while-revalidate
+  // HTML page navigations — ALWAYS try network first so deploys show up
+  // immediately. Falls back to cache only if truly offline.
+  if (event.request.mode === 'navigate' || event.request.destination === 'document') {
+    event.respondWith(
+      fetch(event.request)
+        .then(res => {
+          const clone = res.clone();
+          caches.open(CACHE_VERSION).then(c => c.put(event.request, clone));
+          return res;
+        })
+        .catch(() => caches.match(event.request).then(c => c || caches.match('./index.html')))
+    );
+    return;
+  }
+
+  // Google Fonts / CDN assets — stale-while-revalidate
   if (url.hostname.includes('fonts.g') || url.hostname.includes('gstatic')) {
     event.respondWith(
       caches.open(CACHE_VERSION).then(cache =>
@@ -85,22 +98,16 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // For everything else (app shell) — cache-first with network fallback
+  // Static assets (icons, manifest) — cache-first is fine, they rarely change
   event.respondWith(
     caches.match(event.request).then(cached => {
       if (cached) return cached;
       return fetch(event.request).then(res => {
-        // Cache successful same-origin responses
         if (res.ok && url.origin === self.location.origin) {
           caches.open(CACHE_VERSION).then(c => c.put(event.request, res.clone()));
         }
         return res;
-      }).catch(() => {
-        // Offline fallback — return cached index.html for navigation requests
-        if (event.request.mode === 'navigate') {
-          return caches.match('/index.html');
-        }
-      });
+      }).catch(() => {});
     })
   );
 });
