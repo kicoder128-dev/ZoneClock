@@ -109,7 +109,8 @@
   .tz-option:last-child { border-bottom:none; }
   .tz-option:hover { background:rgba(255,255,255,0.05); }
   .tz-option.selected { opacity:0.35; cursor:default; pointer-events:none; }
-  .tz-option-city { font-weight:600; }
+  .tz-option-city { font-weight:600; min-width:0; }
+  .tz-option-sub { display:block; font-weight:400; font-size:11px; color:var(--muted); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .tz-option-code { font-family:var(--mono); font-size:11px; color:var(--muted); flex-shrink:0; }
   .tz-no-results { padding:16px; text-align:center; color:var(--muted); font-size:14px; }
   .limit-notice { margin-bottom:18px; padding:12px 16px; border-radius:10px; background:rgba(240,96,96,0.07); border:1px solid rgba(240,96,96,0.22); font-size:13px; color:var(--danger); display:none; align-items:center; gap:10px; }
@@ -328,6 +329,24 @@
     .clock-time { font-size: 26px; }
     .tab-text { display: none; }
   }
+
+  /* ── CALENDAR ── */
+  .cal-card { background:var(--surface2); border:1px solid var(--border); border-radius:12px; padding:14px 16px; display:flex; flex-direction:column; gap:4px; min-width:0; }
+  .cal-card.primary { border-color:rgba(200,240,96,0.35); background:rgba(200,240,96,0.05); }
+  .cal-card-flag { font-size:20px; line-height:1; }
+  .cal-card-name { font-size:10px; font-weight:700; color:var(--muted); letter-spacing:0.6px; text-transform:uppercase; margin-top:4px; }
+  .cal-card.primary .cal-card-name { color:var(--accent); }
+  .cal-card-date { font-family:var(--mono); font-size:15px; color:var(--text); font-weight:500; line-height:1.35; overflow-wrap:anywhere; }
+  .cal-card-sub { font-size:11px; color:var(--muted); line-height:1.4; }
+  .cal-info-item { display:flex; flex-direction:column; gap:2px; }
+  .cal-info-label { font-family:var(--mono); font-size:9px; color:var(--muted); letter-spacing:0.5px; text-transform:uppercase; }
+  .cal-info-value { font-size:13px; font-weight:600; color:var(--text); }
+  @media (max-width:540px) {
+    #calResults { grid-template-columns:repeat(2,minmax(0,1fr)) !important; gap:8px !important; }
+    .cal-card { padding:12px; }
+    .cal-card-date { font-size:13px; }
+    #calDayInfoContent { grid-template-columns:repeat(2,minmax(0,1fr)) !important; }
+  }
 </style>
 </head>
 <body>
@@ -455,7 +474,7 @@
   <div id="panel-calendar" class="tab-panel">
     <div class="converter-box">
       <h3><span class="ch-icon">📅</span> Calendar Converter</h3>
-      <p style="font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.6;">Enter a Gregorian (CE) date to see it converted to 10 other calendar systems.</p>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.6;">Enter a Gregorian (CE) date to see it in 13 other calendar systems.</p>
 
       <!-- PRIMARY: Gregorian (CE) input — always the default flow -->
       <div id="calGregorianBlock" style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:18px 20px;margin-bottom:16px;">
@@ -477,22 +496,33 @@
           <div style="font-family:var(--mono);font-size:9px;letter-spacing:1.2px;text-transform:uppercase;color:var(--accent2);">🔄 Convert From Another Calendar</div>
           <span onclick="toggleCalDirection()" style="font-size:11px;color:var(--muted);cursor:pointer;text-decoration:underline;-webkit-tap-highlight-color:transparent;">← Back to Gregorian input</span>
         </div>
-        <select id="calInputSystem" class="conv-select" style="width:100%;margin-bottom:12px;" onchange="convertCalendarManual()">
-          <option value="hijri">Hijri (Islamic)</option>
-          <option value="persian">Persian / Jalali</option>
-          <option value="hebrew">Hebrew (Jewish)</option>
-          <option value="ethiopian">Ethiopian</option>
+        <select id="calInputSystem" class="conv-select" style="width:100%;margin-bottom:12px;" onchange="onReverseSystemChange()">
+          <option value="islamic-umalqura">Hijri — Umm al-Qura</option>
+          <option value="islamic-civil">Hijri — Tabular (civil)</option>
           <option value="coptic">Coptic</option>
+          <option value="persian">Persian / Solar Hijri</option>
+          <option value="hebrew">Hebrew (Jewish)</option>
+          <option value="ethiopic">Ethiopian</option>
+          <option value="indian">Indian National (Śaka)</option>
         </select>
         <div id="calManualInput" style="display:flex;flex-wrap:wrap;gap:8px;">
-          <input type="number" id="calManDay" placeholder="Day" min="1" max="30" class="conv-input" style="flex:1;min-width:70px;" oninput="convertCalendarManual()"/>
-          <input type="number" id="calManMonth" placeholder="Month" min="1" max="13" class="conv-input" style="flex:1;min-width:70px;" oninput="convertCalendarManual()"/>
-          <input type="number" id="calManYear" placeholder="Year" class="conv-input" style="flex:1;min-width:100px;" oninput="convertCalendarManual()"/>
-          <div id="calManHint" style="width:100%;font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:4px;"></div>
+          <input type="number" id="calManDay" placeholder="Day" min="1" max="30" class="conv-input" style="flex:0 0 80px;min-width:70px;" oninput="convertCalendarManual()"/>
+          <select id="calManMonth" class="conv-select" style="flex:2;min-width:150px;" onchange="convertCalendarManual()"></select>
+          <input type="number" id="calManYear" placeholder="Year" class="conv-input" style="flex:1;min-width:90px;" oninput="onReverseYearChange()"/>
         </div>
+        <div id="calRevResult" style="margin-top:12px;font-size:15px;font-weight:600;color:var(--accent);"></div>
+        <div id="calManHint" style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:4px;"></div>
       </div>
 
-      <div style="font-family:var(--mono);font-size:10px;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);margin-bottom:12px;">Equivalent Dates</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
+        <div style="font-family:var(--mono);font-size:10px;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);">Equivalent Dates</div>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);" title="Local moon sighting (e.g. Egypt, Morocco, Pakistan) can differ from Umm al-Qura by a day or two">
+          Hijri adjustment
+          <select id="calHijriAdj" class="conv-select" style="min-width:0;flex:none;padding:5px 8px;font-size:12px;" onchange="setHijriAdj(parseInt(this.value))">
+            <option value="-2">−2 days</option><option value="-1">−1 day</option><option value="0">None</option><option value="1">+1 day</option><option value="2">+2 days</option>
+          </select>
+        </label>
+      </div>
       <div id="calResults" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(185px,1fr));gap:12px;"></div>
       <div id="calDayInfo" style="margin-top:20px;display:none;">
         <div style="font-family:var(--mono);font-size:10px;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">Day Information</div>
@@ -572,32 +602,172 @@
 </div>
 
 <script>
-/* DYNAMIC OS CORE SYSTEM INTEGRATION — Pulls all IANA Time zones automatically */
+/* ═══════════════════════════════════════
+   TIME ZONE CATALOGUE
+   1) Common abbreviations (CST, CET, EST, IST…) mapped to a representative
+      region so daylight-saving changes are handled automatically
+   2) Fixed UTC offsets (UTC−12 … UTC+14, plus :30 / :45 zones)
+   3) Popular city names that are not IANA identifiers (Houston, Mumbai…)
+   4) Every IANA zone the browser knows
+═══════════════════════════════════════ */
+function tzValid(tz) { try { new Intl.DateTimeFormat('en', { timeZone: tz }); return true; } catch (e) { return false; } }
+function tzDisplayName(tz) {
+  if (tz === 'UTC' || tz.startsWith('Etc/')) return 'Fixed offset';
+  return tz.split('/').pop().replace(/_/g, ' ');
+}
+
+const ZONE_ABBR = [
+  // [abbreviation, full name, IANA zone, where]
+  ['UTC',  'Coordinated Universal Time',        'Etc/UTC',                        'Worldwide'],
+  ['GMT',  'Greenwich Mean Time',               'Etc/GMT',                        'No daylight saving'],
+  ['UK',   'UK Time (GMT / BST)',               'Europe/London',                  'London'],
+  ['BST',  'British Summer Time',               'Europe/London',                  'London'],
+  ['IST',  'Irish Standard Time',               'Europe/Dublin',                  'Dublin'],
+  ['WET',  'Western European Time (WEST)',      'Europe/Lisbon',                  'Lisbon'],
+  ['CET',  'Central European Time (CEST)',      'Europe/Paris',                   'Paris, Berlin, Rome'],
+  ['CEST', 'Central European Summer Time',      'Europe/Berlin',                  'Berlin, Madrid'],
+  ['EET',  'Eastern European Time (EEST)',      'Europe/Athens',                  'Athens, Helsinki'],
+  ['EET',  'Egypt Time',                        'Africa/Cairo',                   'Cairo'],
+  ['MSK',  'Moscow Standard Time',              'Europe/Moscow',                  'Moscow'],
+  ['TRT',  'Turkey Time',                       'Europe/Istanbul',                'Istanbul'],
+  ['WAT',  'West Africa Time',                  'Africa/Lagos',                   'Lagos'],
+  ['CAT',  'Central Africa Time',               'Africa/Maputo',                  'Maputo, Harare'],
+  ['EAT',  'East Africa Time',                  'Africa/Nairobi',                 'Nairobi'],
+  ['SAST', 'South Africa Standard Time',        'Africa/Johannesburg',            'Johannesburg'],
+  ['AST',  'Arabia Standard Time',              'Asia/Riyadh',                    'Riyadh, Doha, Kuwait'],
+  ['GST',  'Gulf Standard Time',                'Asia/Dubai',                     'Dubai, Muscat'],
+  ['IRST', 'Iran Standard Time',                'Asia/Tehran',                    'Tehran'],
+  ['AFT',  'Afghanistan Time',                  'Asia/Kabul',                     'Kabul'],
+  ['PKT',  'Pakistan Standard Time',            'Asia/Karachi',                   'Karachi'],
+  ['IST',  'India Standard Time',               'Asia/Kolkata',                   'Mumbai, Delhi'],
+  ['IST',  'Israel Standard Time',              'Asia/Jerusalem',                 'Jerusalem'],
+  ['NPT',  'Nepal Time',                        'Asia/Kathmandu',                 'Kathmandu'],
+  ['BST',  'Bangladesh Standard Time',          'Asia/Dhaka',                     'Dhaka'],
+  ['MMT',  'Myanmar Time',                      'Asia/Yangon',                    'Yangon'],
+  ['ICT',  'Indochina Time',                    'Asia/Bangkok',                   'Bangkok, Hanoi'],
+  ['WIB',  'Western Indonesia Time',            'Asia/Jakarta',                   'Jakarta'],
+  ['SGT',  'Singapore Time',                    'Asia/Singapore',                 'Singapore'],
+  ['MYT',  'Malaysia Time',                     'Asia/Kuala_Lumpur',              'Kuala Lumpur'],
+  ['PHT',  'Philippine Time',                   'Asia/Manila',                    'Manila'],
+  ['CST',  'China Standard Time',               'Asia/Shanghai',                  'Beijing, Shanghai'],
+  ['HKT',  'Hong Kong Time',                    'Asia/Hong_Kong',                 'Hong Kong'],
+  ['AWST', 'Australian Western Standard Time',  'Australia/Perth',                'Perth'],
+  ['JST',  'Japan Standard Time',               'Asia/Tokyo',                     'Tokyo'],
+  ['KST',  'Korea Standard Time',               'Asia/Seoul',                     'Seoul'],
+  ['ACST', 'Australian Central Time (ACDT)',    'Australia/Adelaide',             'Adelaide'],
+  ['AEST', 'Australian Eastern Time (AEDT)',    'Australia/Sydney',               'Sydney, Melbourne'],
+  ['AEST', 'Australian Eastern (no DST)',       'Australia/Brisbane',             'Brisbane'],
+  ['NZST', 'New Zealand Time (NZDT)',           'Pacific/Auckland',               'Auckland'],
+  ['HST',  'Hawaii Standard Time',              'Pacific/Honolulu',               'Honolulu'],
+  ['AKST', 'Alaska Time (AKDT)',                'America/Anchorage',              'Anchorage'],
+  ['PST',  'Pacific Time (PST / PDT)',          'America/Los_Angeles',            'Los Angeles, Seattle'],
+  ['MST',  'Mountain Time (MST / MDT)',         'America/Denver',                 'Denver'],
+  ['MST',  'Mountain Standard (no DST)',        'America/Phoenix',                'Phoenix'],
+  ['CST',  'Central Time (CST / CDT)',          'America/Chicago',                'Chicago, Houston, Dallas'],
+  ['CST',  'Central Standard (Mexico)',         'America/Mexico_City',            'Mexico City'],
+  ['EST',  'Eastern Time (EST / EDT)',          'America/New_York',               'New York, Toronto'],
+  ['AST',  'Atlantic Time (AST / ADT)',         'America/Halifax',                'Halifax'],
+  ['NST',  'Newfoundland Time',                 'America/St_Johns',               "St. John's"],
+  ['BRT',  'Brasília Time',                     'America/Sao_Paulo',              'São Paulo'],
+  ['ART',  'Argentina Time',                    'America/Argentina/Buenos_Aires', 'Buenos Aires'],
+  ['COT',  'Colombia Time',                     'America/Bogota',                 'Bogotá'],
+];
+
+// Non-integer offsets have no Etc/ zone, so they use a representative city
+const ZONE_FRACTIONAL = [
+  ['UTC−09:30', 'Pacific/Marquesas', 'Marquesas'], ['UTC−03:30', 'America/St_Johns', 'Newfoundland'],
+  ['UTC+03:30', 'Asia/Tehran', 'Iran'],            ['UTC+04:30', 'Asia/Kabul', 'Afghanistan'],
+  ['UTC+05:30', 'Asia/Kolkata', 'India'],          ['UTC+05:45', 'Asia/Kathmandu', 'Nepal'],
+  ['UTC+06:30', 'Asia/Yangon', 'Myanmar'],         ['UTC+08:45', 'Australia/Eucla', 'Eucla'],
+  ['UTC+09:30', 'Australia/Darwin', 'Darwin'],     ['UTC+10:30', 'Australia/Lord_Howe', 'Lord Howe'],
+  ['UTC+12:45', 'Pacific/Chatham', 'Chatham Is.'],
+];
+
+const CITY_ALIASES = [
+  ['Houston','America/Chicago'],['Dallas','America/Chicago'],['Austin','America/Chicago'],['New Orleans','America/Chicago'],['Minneapolis','America/Chicago'],
+  ['Washington DC','America/New_York'],['Boston','America/New_York'],['Miami','America/New_York'],['Atlanta','America/New_York'],['Philadelphia','America/New_York'],
+  ['San Francisco','America/Los_Angeles'],['Seattle','America/Los_Angeles'],['Las Vegas','America/Los_Angeles'],['San Diego','America/Los_Angeles'],
+  ['Montreal','America/Toronto'],['Ottawa','America/Toronto'],['Calgary','America/Edmonton'],['Rio de Janeiro','America/Sao_Paulo'],['Brasília','America/Sao_Paulo'],
+  ['Aberdeen','Europe/London'],['Edinburgh','Europe/London'],['Manchester','Europe/London'],['Stavanger','Europe/Oslo'],['Bergen','Europe/Oslo'],
+  ['Barcelona','Europe/Madrid'],['Milan','Europe/Rome'],['Munich','Europe/Berlin'],['Frankfurt','Europe/Berlin'],['Hamburg','Europe/Berlin'],['Geneva','Europe/Zurich'],
+  ['Alexandria','Africa/Cairo'],['Giza','Africa/Cairo'],['Abuja','Africa/Lagos'],['Port Harcourt','Africa/Lagos'],['Cape Town','Africa/Johannesburg'],['Durban','Africa/Johannesburg'],
+  ['Abu Dhabi','Asia/Dubai'],['Sharjah','Asia/Dubai'],['Jeddah','Asia/Riyadh'],['Mecca','Asia/Riyadh'],['Medina','Asia/Riyadh'],['Dammam','Asia/Riyadh'],
+  ['Mumbai','Asia/Kolkata'],['Delhi','Asia/Kolkata'],['New Delhi','Asia/Kolkata'],['Bangalore','Asia/Kolkata'],['Chennai','Asia/Kolkata'],['Hyderabad','Asia/Kolkata'],
+  ['Lahore','Asia/Karachi'],['Islamabad','Asia/Karachi'],['Beijing','Asia/Shanghai'],['Shenzhen','Asia/Shanghai'],['Guangzhou','Asia/Shanghai'],
+  ['Hanoi','Asia/Ho_Chi_Minh'],['Osaka','Asia/Tokyo'],['Kyoto','Asia/Tokyo'],['Canberra','Australia/Sydney'],['Wellington','Pacific/Auckland'],
+];
+
 const getSystemZones = () => {
+  const out = [], seen = new Set();
+  const push = z => {
+    if (!tzValid(z.tz)) return;
+    const key = z.label + '|' + z.tz;
+    if (seen.has(key)) return;
+    seen.add(key);
+    z.kw = (z.label + ' ' + (z.sub || '') + ' ' + (z.tz.startsWith('Etc/') ? '' : z.tz.replace(/_/g, ' '))).toLowerCase();
+    out.push(z);
+  };
+  ZONE_ABBR.forEach(([abbr, name, tz, where]) => push({ label: abbr, tz, sub: `${name} · ${where}`, kind: 'abbr' }));
+  for (let n = -12; n <= 14; n++) {
+    const tz = n === 0 ? 'Etc/UTC' : `Etc/GMT${n > 0 ? '-' : '+'}${Math.abs(n)}`; // Etc/ signs are inverted
+    const label = `UTC${n < 0 ? '−' : '+'}${String(Math.abs(n)).padStart(2, '0')}:00`;
+    push({ label, tz, sub: 'Fixed offset, no daylight saving', kind: 'offset' });
+  }
+  ZONE_FRACTIONAL.forEach(([label, tz, where]) => push({ label, tz, sub: where, kind: 'offset' }));
+  const cities = [];
+  CITY_ALIASES.forEach(([label, tz]) => cities.push({ label, tz, sub: tz.split('/')[0] }));
   try {
-    if (Intl && typeof Intl.supportedValuesOf === 'function') {
-      return Intl.supportedValuesOf('timeZone').map(tz => {
-        const parts = tz.split('/');
-        const label = parts.length > 1 ? parts.slice(1).join('/').replace(/_/g, ' ') : parts[0].replace(/_/g, ' ');
-        return { label: label, tz: tz };
-      }).sort((a, b) => a.label.localeCompare(b.label));
-    }
-  } catch (e) { console.error("Native IANA lookup error, falling back", e); }
-  
-  // Fallback map in case of older sandbox environments
-  return [
-    { label: "Aberdeen", tz: "Europe/London" },
-    { label: "Cairo", tz: "Africa/Cairo" },
-    { label: "Dubai", tz: "Asia/Dubai" },
-    { label: "Houston", tz: "America/Chicago" },
-    { label: "London", tz: "Europe/London" },
-    { label: "New York", tz: "America/New_York" },
-    { label: "Singapore", tz: "Asia/Singapore" },
-    { label: "Tokyo", tz: "Asia/Tokyo" }
-  ];
+    if (Intl.supportedValuesOf) Intl.supportedValuesOf('timeZone').forEach(tz => {
+      if (tz.startsWith('Etc/') || !tz.includes('/')) return;
+      cities.push({ label: tz.split('/').pop().replace(/_/g, ' '), tz, sub: tz.split('/').slice(0, -1).join(' / ').replace(/_/g, ' ') });
+    });
+  } catch (e) { console.warn('IANA list unavailable', e); }
+  cities.sort((a, b) => a.label.localeCompare(b.label)).forEach(c => push({ ...c, kind: 'city' }));
+  return out;
 };
 
 const ZONES = getSystemZones();
+
+let _offsetCache = { t: 0, map: new Map() };
+function zoneOffsetMinutes(tz) {
+  const now = Date.now();
+  if (now - _offsetCache.t > 10 * 60 * 1000) _offsetCache = { t: now, map: new Map() };
+  if (!_offsetCache.map.has(tz)) _offsetCache.map.set(tz, getOffsetMinutes(tz, new Date()));
+  return _offsetCache.map.get(tz);
+}
+function zoneOffsetLabel(tz) {
+  const m = zoneOffsetMinutes(tz);
+  const s = m < 0 ? '−' : '+', a = Math.abs(m);
+  return `UTC${s}${String(Math.floor(a / 60)).padStart(2, '0')}:${String(a % 60).padStart(2, '0')}`;
+}
+
+// Search by city, country/region, abbreviation (CET, CST…) or offset ("+3", "GMT+5:30", "utc-4")
+function searchZones(query, limit = 80) {
+  const q = query.trim().toLowerCase();
+  if (!q) return ZONES.filter(z => z.kind !== 'city').concat(ZONES.filter(z => z.kind === 'city')).slice(0, limit);
+  const off = q.replace(/\s/g, '').replace('−', '-').match(/^(?:utc|gmt)?([+-])(\d{1,2})(?::?(\d{2}))?$/);
+  const offMin = off ? (off[1] === '-' ? -1 : 1) * (parseInt(off[2]) * 60 + parseInt(off[3] || '0')) : null;
+  const scored = [];
+  for (const z of ZONES) {
+    const l = z.label.toLowerCase();
+    let s = -1;
+    if (offMin !== null) { if (zoneOffsetMinutes(z.tz) === offMin) s = z.kind === 'offset' ? 0 : z.kind === 'abbr' ? 1 : 2; }
+    else if (l === q) s = 0;
+    else if (l.startsWith(q)) s = 1;
+    else if (l.includes(q)) s = 2;
+    else if (z.kw.includes(q)) s = 3;
+    if (s >= 0) scored.push([s, z.kind === 'city' ? 1 : 0, z]);
+  }
+  scored.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  return scored.slice(0, limit).map(x => x[2]);
+}
+
+function zoneOptionsHTML() {
+  const opt = z => `<option value="${z.tz}" data-label="${z.label.replace(/"/g, '&quot;')}">${z.label}${z.kind === 'city' ? ' — ' + z.sub : z.kind === 'abbr' ? ' — ' + z.sub.split(' · ')[0] : ''} (${zoneOffsetLabel(z.tz)})</option>`;
+  return `<optgroup label="Time zone abbreviations">${ZONES.filter(z => z.kind === 'abbr').map(opt).join('')}</optgroup>`
+       + `<optgroup label="UTC offsets">${ZONES.filter(z => z.kind === 'offset').sort((a, b) => zoneOffsetMinutes(a.tz) - zoneOffsetMinutes(b.tz)).map(opt).join('')}</optgroup>`
+       + `<optgroup label="Cities">${ZONES.filter(z => z.kind === 'city').map(opt).join('')}</optgroup>`;
+}
 const FREE_LIMIT = 2;
 let isPremium = localStorage.getItem('zc_premium') === 'true';
 let hourFormat = parseInt(localStorage.getItem('zc_format')) || 12;
@@ -638,8 +808,10 @@ function switchTab(tab, btn) {
   if (tab === 'converter') initConverter();
   if (tab === 'lookup') initMeetingLookup();
   if (tab === 'calendar') {
+    const adjEl = document.getElementById('calHijriAdj');
+    if (adjEl) adjEl.value = String(getHijriAdj());
     const ci = document.getElementById('calInput');
-    if (ci && !ci.value) setCalToday();
+    if (ci && !ci.value) setCalToday(); else convertCalendar();
     // Always show Gregorian input as the default view when entering the tab
     const greg = document.getElementById('calGregorianBlock');
     const rev  = document.getElementById('calReverseBlock');
@@ -729,7 +901,7 @@ function getClockAngles(tz) {
 }
 
 function buildClockHTML(z, i) {
-  const tzShort = z.tz.split('/').pop().replace(/_/g, ' ');
+  const tzShort = tzDisplayName(z.tz);
   const offset = getOffset(z.tz);
   return `
     <div class="clock-card${z.home ? ' home' : ''}" draggable="true" id="card-${i}" data-tz="${z.tz}" data-home="${z.home}" ondragstart="dragStart(event,${i})" ondragover="dragOver(event,${i})" ondrop="dragDrop(event,${i})" ondragend="dragEnd(event)">
@@ -848,7 +1020,7 @@ function selectZone(tz, label) {
 function addSelectedZone() {
   if (!selectedTz) {
     const query = document.getElementById('tzSearch').value.trim().toLowerCase();
-    const match = ZONES.find(z => z.label.toLowerCase() === query);
+    const match = searchZones(query, 1)[0];
     if (match) selectedTz = match;
   }
   if (!selectedTz) return;
@@ -858,7 +1030,7 @@ function addSelectedZone() {
     document.getElementById('limitNotice').classList.add('show');
     return;
   }
-  if (userZones.some(z => z.tz === selectedTz.tz)) {
+  if (userZones.some(z => z.tz === selectedTz.tz && z.label === selectedTz.label)) {
     selectedTz = null;
     document.getElementById('tzSearch').value = '';
     return;
@@ -901,21 +1073,18 @@ function setHome(i) {
 
 function onSearch() { selectedTz = null; openDropdown(); }
 function openDropdown() {
-  const query = document.getElementById('tzSearch').value.trim().toLowerCase();
+  const query = document.getElementById('tzSearch').value;
   const dropdown = document.getElementById('tzDropdown');
   if(!dropdown) return;
-  const addedTzs = new Set(userZones.map(z => z.tz));
-  
-  let filtered = ZONES.filter(z => z.label.toLowerCase().includes(query) || z.tz.toLowerCase().replace(/_/g, ' ').includes(query));
+  const filtered = searchZones(query, 80);
   if (filtered.length === 0) {
-    dropdown.innerHTML = `<div class="tz-no-results">No results for "${query}"</div>`;
+    dropdown.innerHTML = `<div class="tz-no-results">No results for "${query.replace(/</g,'&lt;')}". Try a city, an abbreviation like CET, or an offset like +3</div>`;
     dropdown.classList.add('open');
     return;
   }
-  
-  dropdown.innerHTML = filtered.slice(0, 60).map(z => {
-    const isAdded = addedTzs.has(z.tz);
-    return `<div class="tz-option${isAdded ? ' selected' : ''}" onclick="${isAdded ? '' : `selectZone('${z.tz}','${z.label.replace(/'/g, "\\'")}')`}"><span class="tz-option-city">${z.label}</span><span class="tz-option-code">${z.tz.split('/')[0]} (${getOffset(z.tz)})</span></div>`;
+  dropdown.innerHTML = filtered.map(z => {
+    const isAdded = userZones.some(u => u.tz === z.tz && u.label === z.label);
+    return `<div class="tz-option${isAdded ? ' selected' : ''}" onclick="${isAdded ? '' : `selectZone('${z.tz}','${z.label.replace(/'/g, "\\'")}')`}"><span class="tz-option-city">${z.label}<small class="tz-option-sub">${z.sub || ''}</small></span><span class="tz-option-code">${zoneOffsetLabel(z.tz)}${isAdded ? ' · added' : ''}</span></div>`;
   }).join('');
   dropdown.classList.add('open');
 }
@@ -929,15 +1098,14 @@ document.addEventListener('click', e => {
 
 function openHomeModal() {
   document.getElementById('homeSearchInput').value = '';
-  renderHomeModalList(ZONES);
+  renderHomeModalList(searchZones('', 80));
   document.getElementById('homeModal').classList.add('show');
 }
 function closeHomeModal() { 
   document.getElementById('homeModal').classList.remove('show'); 
 }
 function onHomeSearch() {
-  const q = document.getElementById('homeSearchInput').value.trim().toLowerCase();
-  const filtered = ZONES.filter(z => z.label.toLowerCase().includes(q) || z.tz.toLowerCase().replace(/_/g,' ').includes(q));
+  const filtered = searchZones(document.getElementById('homeSearchInput').value, 80);
   renderHomeModalList(filtered);
 }
 function renderHomeModalList(list) {
@@ -948,9 +1116,9 @@ function renderHomeModalList(list) {
     container.innerHTML = `<div class="tz-no-results">No matches found</div>`;
     return;
   }
-  container.innerHTML = list.slice(0, 60).map(z => {
-    const isCurrent = currentHome && currentHome.tz === z.tz;
-    return `<div class="home-zone-item${isCurrent ? ' current' : ''}" onclick="selectNewHome('${z.tz}','${z.label.replace(/'/g, "\\'")}')"><span>${z.label}</span><span class="hz-code">${getOffset(z.tz)}</span></div>`;
+  container.innerHTML = list.slice(0, 80).map(z => {
+    const isCurrent = currentHome && currentHome.tz === z.tz && currentHome.label === z.label;
+    return `<div class="home-zone-item${isCurrent ? ' current' : ''}" onclick="selectNewHome('${z.tz}','${z.label.replace(/'/g, "\\'")}')"><span>${z.label}<small class="tz-option-sub">${z.sub || ''}</small></span><span class="hz-code">${zoneOffsetLabel(z.tz)}</span></div>`;
   }).join('');
 }
 function selectNewHome(tz, label) {
@@ -1150,13 +1318,13 @@ function initConverter() {
   const toSel = document.getElementById('convTo');
   if(!fromSel || !toSel) return;
 
-  const optionsHTML = ZONES.map(z => `<option value="${z.tz}">${z.label} (${getOffset(z.tz)})</option>`).join('');
+  const optionsHTML = zoneOptionsHTML();
   fromSel.innerHTML = optionsHTML;
   toSel.innerHTML = optionsHTML;
 
   const home = userZones.find(z => z.home) || userZones[0];
   if (home) fromSel.value = home.tz;
-  if (userZones[1]) toSel.value = userZones[1].tz; else toSel.value = ZONES[0].tz;
+  toSel.value = userZones[1] ? userZones[1].tz : 'Etc/UTC';
 
   const now = new Date();
   document.getElementById('convTime').value = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
@@ -1233,15 +1401,15 @@ function swapConverter() {
 function initMeetingLookup() {
   const sel = document.getElementById('lookupTargetSelect');
   if(!sel) return;
-  sel.innerHTML = ZONES.map(z => `<option value="${z.tz}">${z.label} (${getOffset(z.tz)})</option>`).join('');
+  sel.innerHTML = zoneOptionsHTML();
   if(userZones[1]) sel.value = userZones[1].tz;
   runMeetingLookup();
 }
 
 function runMeetingLookup() {
   const lookupTz = document.getElementById('lookupTargetSelect').value;
-  const match = ZONES.find(z => z.tz === lookupTz);
-  const cityName = match ? match.label : 'Target';
+  const selOpt = document.getElementById('lookupTargetSelect').selectedOptions[0];
+  const cityName = selOpt ? selOpt.dataset.label : 'Target';
 
   document.getElementById('lkEmpty').style.display = 'none';
   document.getElementById('lkResults').style.display = 'block';
@@ -1310,62 +1478,163 @@ if ('serviceWorker' in navigator) {
 }
 
 /* ═══════════════════════════════════════
-   CALENDAR CONVERTER — 11 systems
+   CALENDAR CONVERTER
+   Uses the browser's built-in ICU calendars (Intl) — the same data
+   used by iOS, Android and Windows — instead of hand-written formulas.
+   Hijri defaults to Umm al-Qura (official Saudi calendar) with an
+   optional ±2 day adjustment for local moon sighting.
 ═══════════════════════════════════════ */
 function gregorianToJDN(y,m,d){const a=Math.floor((14-m)/12);const yr=y+4800-a;const mo=m+12*a-3;return d+Math.floor((153*mo+2)/5)+365*yr+Math.floor(yr/4)-Math.floor(yr/100)+Math.floor(yr/400)-32045;}
 function jdnToGregorian(jdn){const a=jdn+32044;const b=Math.floor((4*a+3)/146097);const c=a-Math.floor(146097*b/4);const d=Math.floor((4*c+3)/1461);const e=c-Math.floor(1461*d/4);const m2=Math.floor((5*e+2)/153);return{d:e-Math.floor((153*m2+2)/5)+1,m:m2+3-12*Math.floor(m2/10),y:100*b+d-4800+Math.floor(m2/10)};}
-function jdnToHijri(jdn){const l=jdn-1948440+10632;const n=Math.floor((l-1)/10631);const ll=l-10631*n+354;const j=Math.floor((10985-ll)/5316)*Math.floor(50*ll/17719)+Math.floor(ll/5670)*Math.floor(43*ll/15238);const lll=ll-Math.floor((30-j)/15)*Math.floor(17719*j/50)-Math.floor(j/16)*Math.floor(15238*j/43)+29;const mo=Math.floor(24*lll/709);return{y:30*n+j-30,m:mo,d:lll-Math.floor(709*mo/24)};}
-function hijriToJDN(y,m,d){return Math.floor((11*y+3)/30)+354*y+30*m-Math.floor((m-1)/2)+d+1948440-385;}
-function hebrewDelay1(y){const mo=Math.floor((235*y-234)/19);const pts=12084+13753*mo;let day=mo*29+Math.floor(pts/25920);if((3*(day+1))%7<3)day++;return day;}
-function hebrewDelay2(y){const l=hebrewDelay1(y-1),p=hebrewDelay1(y),n=hebrewDelay1(y+1);if(n-p===356)return 2;if(p-l===382)return 1;return 0;}
-function hebrewLeapYear(y){return(7*y+1)%19<7;}
-function hebrewDaysInYear(y){return hebrewToJDN(y+1,7,1)-hebrewToJDN(y,7,1);}
-function hebrewDaysInMonth(m,y){if([1,3,5,7,11,13].includes(m))return 30;if([4,6,10,12].includes(m))return 29;if(m===8)return hebrewDaysInYear(y)%10===5?30:29;if(m===9)return hebrewDaysInYear(y)%10===3?29:30;if(m===2)return hebrewLeapYear(y)?29:0;return 29;}
-function hebrewToJDN(y,m,d){const mo=hebrewLeapYear(y)?13:12;let j=347997+hebrewDelay1(y)+hebrewDelay2(y)+d+1;if(m<7){for(let i=7;i<=mo;i++)j+=hebrewDaysInMonth(i,y);for(let i=1;i<m;i++)j+=hebrewDaysInMonth(i,y);}else{for(let i=7;i<m;i++)j+=hebrewDaysInMonth(i,y);}return j;}
-function jdnToHebrew(jdn){let y=Math.floor((jdn-347997)/365.25)+1;while(hebrewToJDN(y+1,7,1)<=jdn)y++;let m=jdn<hebrewToJDN(y,1,1)?7:1;while(jdn>=hebrewToJDN(y,m,hebrewDaysInMonth(m,y)))m++;return{y,m,d:jdn-hebrewToJDN(y,m,1)+1};}
-function persianMod(a,b){return a-b*Math.floor(a/b);}
-function persianToJDN(y,m,d){const PERSIAN_EPOCH=1948322;const epbase=y-(y>=0?474:473);const epyear=474+persianMod(epbase,2820);return d+(m<=7?(m-1)*31:(m-1)*30+6)+Math.floor((epyear*682-110)/2816)+(epyear-1)*365+Math.floor(epbase/2820)*1029983+PERSIAN_EPOCH-1;}
-function jdnToPersian(jdn){const depoch=jdn-persianToJDN(475,1,1);const cycle=Math.floor(depoch/1029983);const cyear=persianMod(depoch,1029983);let ycycle;if(cyear===1029982){ycycle=2820;}else{const a1=Math.floor(cyear/366),a2=persianMod(cyear,366);ycycle=Math.floor((2134*a1+2816*a2+2815)/1028522)+a1+1;}let y=ycycle+2820*cycle+474;if(y<=0)y-=1;const yday=(jdn-persianToJDN(y,1,1))+1;const m=yday<=186?Math.ceil(yday/31):Math.ceil((yday-6)/30);const d=(jdn-persianToJDN(y,m,1))+1;return{y,m,d};}
-function ethiopianToJDN(y,m,d){return 1723856+365*(y-1)+Math.floor(y/4)+30*(m-1)+d-1;}
-function jdnToEthiopian(jdn){const r=(jdn-1723856)%1461;const n=(r%365)+365*Math.floor(r/1460);const y=4*Math.floor((jdn-1723856)/1461)+Math.floor(r/365)-Math.floor(r/1460);return{y,m:Math.min(Math.floor(n/30)+1,13),d:n%30+1};}
-function jdnToCoptic(jdn){const r=(jdn-1825030)%1461;const n=(r%365)+365*Math.floor(r/1460);const y=4*Math.floor((jdn-1825030)/1461)+Math.floor(r/365)-Math.floor(r/1460);return{y,m:Math.min(Math.floor(n/30)+1,13),d:n%30+1};}
-function copticToJDN(y,m,d){return 1825030+365*(y-1)+Math.floor(y/4)+30*(m-1)+d-1;}
+function hijriToJDN(y,m,d){return Math.floor((11*y+3)/30)+354*y+30*m-Math.floor((m-1)/2)+d+1948440-385;} // tabular, used only as a search starting point
 function jdnToJulian(jdn){const b=jdn+1524;const c=Math.floor((b-122.1)/365.25);const d2=Math.floor(365.25*c);const e=Math.floor((b-d2)/30.6001);const day=b-d2-Math.floor(30.6001*e);const mo=e<14?e-1:e-13;return{y:mo>2?c-4716:c-4715,m:mo,d:day};}
-function jdnToBuddhist(jdn){const g=jdnToGregorian(jdn);return{y:g.y+543,m:g.m,d:g.d};}
-function jdnToJapanese(jdn){const g=jdnToGregorian(jdn);const eras=[{n:'Reiwa (令和)',s:2019},{n:'Heisei (平成)',s:1989},{n:'Showa (昭和)',s:1926},{n:'Taisho (大正)',s:1912},{n:'Meiji (明治)',s:1868}];for(const e of eras)if(g.y>=e.s)return{era:e.n,y:g.y-e.s+1,m:g.m,d:g.d};return{era:'Pre-Meiji',y:g.y,m:g.m,d:g.d};}
+function jdnToDate(jdn){const g=jdnToGregorian(jdn);const dt=new Date(Date.UTC(2000,0,1,12));dt.setUTCFullYear(g.y,g.m-1,g.d);return dt;}
+
+const _calFmtCache = {};
+function calFmt(cal, locale) {
+  const key = cal + '|' + (locale || 'en');
+  if (!(key in _calFmtCache)) {
+    try {
+      const f = new Intl.DateTimeFormat(`${locale || 'en'}-u-ca-${cal}${locale ? '' : '-nu-latn'}`, { timeZone: 'UTC', year: 'numeric', month: 'long', day: 'numeric', era: 'short' });
+      _calFmtCache[key] = f.resolvedOptions().calendar === cal ? f : null;
+    } catch (e) { _calFmtCache[key] = null; }
+  }
+  return _calFmtCache[key];
+}
+function calParts(cal, jdn) {
+  const f = calFmt(cal);
+  if (!f) return null;
+  const o = {};
+  for (const p of f.formatToParts(jdnToDate(jdn))) o[p.type] = p.value;
+  return { y: parseInt(o.year || o.relatedYear), m: o.month, d: parseInt(o.day), era: o.era || '', yearName: o.yearName || '' };
+}
+
+function getHijriAdj() { return parseInt(localStorage.getItem('zc_hijri_adj') || '0') || 0; }
+function setHijriAdj(v) {
+  localStorage.setItem('zc_hijri_adj', String(v));
+  if (document.getElementById('calReverseBlock')?.style.display === 'block') convertCalendarManual(); else convertCalendar();
+}
+
+/* Bahá'í (Badíʿ) calendar — since 2015 Naw-Rúz is the day on which the March
+   equinox occurs before sunset in Tehran. Equinox: Meeus ch. 27 (≈1 min);
+   sunset: NOAA solar equations. */
+function marchEquinoxJD(y){
+  const Y=(y-2000)/1000, j0=2451623.80984+365242.37404*Y+0.05169*Y*Y-0.00411*Y**3-0.00057*Y**4;
+  const T=(j0-2451545)/36525, W=(35999.373*T-2.47)*Math.PI/180, dl=1+0.0334*Math.cos(W)+0.0007*Math.cos(2*W);
+  const P=[[485,324.96,1934.136],[203,337.23,32964.467],[199,342.08,20.186],[182,27.85,445267.112],[156,73.14,45036.886],[136,171.52,22518.443],[77,222.54,65928.934],[74,296.72,3034.906],[70,243.58,9037.513],[58,119.81,33718.147],[52,297.17,150.678],[50,21.02,2281.226],[45,247.54,29929.562],[44,325.15,31555.956],[29,60.93,4443.417],[18,155.12,67555.328],[17,288.79,4562.452],[16,198.04,62894.029],[14,199.76,31436.921],[12,95.39,14577.848],[12,287.11,31931.756],[12,320.81,34777.259],[9,227.73,1222.114],[8,15.45,16859.074]];
+  let S=0; for(const[a,b,c]of P) S+=a*Math.cos((b+c*T)*Math.PI/180);
+  return j0+0.00001*S/dl-69/86400; // TT → UT
+}
+function tehranSunsetUTCmin(gy,gm,gd){
+  const lat=35.6892*Math.PI/180, lon=51.389;
+  const n=gregorianToJDN(gy,gm,gd)-gregorianToJDN(gy,1,1)+1, g=2*Math.PI/365*(n-1);
+  const eqt=229.18*(0.000075+0.001868*Math.cos(g)-0.032077*Math.sin(g)-0.014615*Math.cos(2*g)-0.040849*Math.sin(2*g));
+  const dec=0.006918-0.399912*Math.cos(g)+0.070257*Math.sin(g)-0.006758*Math.cos(2*g)+0.000907*Math.sin(2*g)-0.002697*Math.cos(3*g)+0.00148*Math.sin(3*g);
+  const ha=Math.acos(Math.cos(90.833*Math.PI/180)/(Math.cos(lat)*Math.cos(dec))-Math.tan(lat)*Math.tan(dec))*180/Math.PI;
+  return 720-4*(lon-ha)-eqt;
+}
+function nawRuzJDN(gy){
+  if (gy < 2015) return gregorianToJDN(gy,3,21);
+  const eq = marchEquinoxJD(gy) + 3.5/24;            // Tehran local (UTC+3:30)
+  const day = Math.floor(eq + 0.5);                  // local civil day of the equinox
+  const localMin = (eq + 0.5 - day) * 1440;
+  const g = jdnToGregorian(day);
+  return localMin < tehranSunsetUTCmin(g.y,g.m,g.d) + 210 ? day : day + 1;
+}
 const BAHAI_M=['Bahá','Jalál','Jamál','ʻAẓamat','Núr','Raḥmat','Kalimát','Kamál','Asmáʼ','ʻIzzat','Mashíyyat','ʻIlm','Qudrat','Qawl','Masáʼil','Sharaf','Sulṭán','Mulk','ʻAláʼ'];
-function jdnToBahai(jdn){const g=jdnToGregorian(jdn);let y=g.y-1844;let nr=gregorianToJDN(g.y,3,21);if(jdn<nr){y--;nr=gregorianToJDN(g.y-1,3,21);}const doy=jdn-nr;if(doy>=342)return{y:y+1,m:0,d:doy-342+1,sp:'Ayyám-Há'};return{y:y+1,m:Math.floor(doy/19)+1,d:doy%19+1};}
-const HIJRI_M=['Muharram','Ṣafar','Rabīʿ al-Awwal','Rabīʿ al-Thānī','Jumādā al-Ūlā','Jumādā al-Thānī','Rajab','Shaʿbān','Ramaḍān','Shawwāl','Dhū al-Qaʿdah','Dhū al-Ḥijjah'];
-const PERSIAN_M=['Farvardin','Ordibehesht','Khordad','Tir','Mordad','Shahrivar','Mehr','Aban','Azar','Dey','Bahman','Esfand'];
-const HEBREW_M=['Nisan','Iyyar','Sivan','Tammuz','Av','Elul','Tishri','Marcheshvan','Kislev','Tevet','Shevat','Adar','Adar II'];
-const ETHIOPIAN_M=['Mäskäräm','Ṭəqəmt','Ḫədar','Taḫśaś','Ṭərr','Yäkatit','Mägabit','Miyazya','Gənbot','Säne','Ḥamle','Nähase','Ṗagume'];
-const COPTIC_M=['Thout','Paopi','Hathor','Koiak','Tobi','Meshir','Paremhat','Paremoude','Pashons','Paoni','Epep','Mesori','Pi Kogi Enavot'];
+function jdnToBahai(jdn){
+  const gy=jdnToGregorian(jdn).y;
+  let start=nawRuzJDN(gy), y=gy-1843;
+  if (jdn<start){ start=nawRuzJDN(gy-1); y--; }
+  const len=nawRuzJDN(gy-1843===y?gy+1:gy)-start;
+  const doy=jdn-start, ha=len-361;                   // Ayyám-i-Há is 4 or 5 days
+  if (doy<342) return {y, month:BAHAI_M[Math.floor(doy/19)], d:doy%19+1};
+  if (doy<342+ha) return {y, month:'Ayyám-i-Há', d:doy-342+1};
+  return {y, month:BAHAI_M[18], d:doy-342-ha+1};
+}
+
 const WD=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-const WD_AR=['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
 const GM=['','January','February','March','April','May','June','July','August','September','October','November','December'];
+const CHINESE_ANIMALS=['Rat','Ox','Tiger','Rabbit','Dragon','Snake','Horse','Goat','Monkey','Rooster','Dog','Pig'];
+const ERA_LABEL={persian:'SH', ethiopic:'EC'};
+
+// Calendars that can be used as an INPUT (reverse conversion)
+const REVERSE_CALS = {
+  'islamic-umalqura': { name:'Hijri — Umm al-Qura', est: Y => hijriToJDN(Y,1,1) },
+  'islamic-civil':    { name:'Hijri — Tabular (civil)', est: Y => hijriToJDN(Y,1,1) },
+  'persian':          { name:'Persian / Solar Hijri', est: Y => gregorianToJDN(Y+621,3,20) },
+  'hebrew':           { name:'Hebrew (Jewish)', est: Y => gregorianToJDN(Y-3761,9,5) },
+  'coptic':           { name:'Coptic', est: Y => gregorianToJDN(Y+283,9,11) },
+  'ethiopic':         { name:'Ethiopian', est: Y => gregorianToJDN(Y+7,9,11) },
+  'indian':           { name:'Indian National (Śaka)', est: Y => gregorianToJDN(Y+78,3,21) },
+};
+const _yearInfoCache = {};
+function calYearInfo(cal, Y) {
+  const key = cal + '|' + Y;
+  if (_yearInfoCache[key]) return _yearInfoCache[key];
+  const est = REVERSE_CALS[cal].est(Y), months = [];
+  for (let j = est - 40; j <= est + 420; j++) {
+    const p = calParts(cal, j);
+    if (!p) return null;
+    if (p.y !== Y) { if (months.length) break; else continue; }
+    const last = months[months.length - 1];
+    if (!last || last.name !== p.m) months.push({ name: p.m, start: j, len: 1 }); else last.len++;
+  }
+  return (_yearInfoCache[key] = months);
+}
+function hijriMonthLength(jdn) {
+  const m = calParts('islamic-umalqura', jdn)?.m;
+  if (!m) return null;
+  let a = jdn, b = jdn;
+  while (calParts('islamic-umalqura', a - 1).m === m) a--;
+  while (calParts('islamic-umalqura', b + 1).m === m) b++;
+  return b - a + 1;
+}
 
 function toggleCalDirection(){
   const greg = document.getElementById('calGregorianBlock');
   const rev  = document.getElementById('calReverseBlock');
   if (!greg || !rev) return;
-  const showingReverse = rev.style.display !== 'none';
+  const showingReverse = rev.style.display === 'block';
   greg.style.display = showingReverse ? 'block' : 'none';
   rev.style.display  = showingReverse ? 'none'  : 'block';
-  if (showingReverse) {
-    // switched back to Gregorian mode
-    convertCalendar();
-  } else {
-    // switched to reverse mode — trigger conversion if fields already filled
-    convertCalendarManual();
-  }
+  if (showingReverse) convertCalendar();
+  else { prefillReverseFromCurrent(); convertCalendarManual(); }
 }
+function prefillReverseFromCurrent() {
+  const sys = document.getElementById('calInputSystem').value;
+  const yEl = document.getElementById('calManYear');
+  const inp = document.getElementById('calInput');
+  let jdn = gregorianToJDN(...todayYMD());
+  if (inp && inp.value) { const [y,m,d] = inp.value.split('-').map(Number); jdn = gregorianToJDN(y,m,d); }
+  const p = calParts(sys, jdn);
+  if (!p) return;
+  yEl.value = p.y;
+  rebuildReverseMonths(p.m);
+  document.getElementById('calManDay').value = p.d;
+}
+function rebuildReverseMonths(selectName) {
+  const sys = document.getElementById('calInputSystem').value;
+  const Y = parseInt(document.getElementById('calManYear').value);
+  const sel = document.getElementById('calManMonth');
+  const prevIdx = sel.selectedIndex;
+  if (!Y || Y < 1 || Y > 9999) { sel.innerHTML = ''; return; }
+  const months = calYearInfo(sys, Y) || [];
+  sel.innerHTML = months.map((m, i) => `<option value="${i}">${i + 1}. ${m.name} (${m.len} days)</option>`).join('');
+  const byName = selectName ? months.findIndex(m => m.name === selectName) : -1;
+  sel.selectedIndex = byName >= 0 ? byName : Math.min(Math.max(prevIdx, 0), months.length - 1);
+}
+function onReverseSystemChange() { prefillReverseFromCurrent(); convertCalendarManual(); }
+function onReverseYearChange() { rebuildReverseMonths(); convertCalendarManual(); }
+
 function setCalToday(){const t=new Date();setCalDate(t.getFullYear(),t.getMonth()+1,t.getDate());}
-function setCalYesterday(){const j=gregorianToJDN(...todayYMD())-1;const g=jdnToGregorian(j);setCalDate(g.y,g.m,g.d);}
-function setCalTomorrow(){const j=gregorianToJDN(...todayYMD())+1;const g=jdnToGregorian(j);setCalDate(g.y,g.m,g.d);}
+function setCalYesterday(){const j=gregorianToJDN(...currentCalYMD())-1;const g=jdnToGregorian(j);setCalDate(g.y,g.m,g.d);}
+function setCalTomorrow(){const j=gregorianToJDN(...currentCalYMD())+1;const g=jdnToGregorian(j);setCalDate(g.y,g.m,g.d);}
 function todayYMD(){const t=new Date();return[t.getFullYear(),t.getMonth()+1,t.getDate()];}
+function currentCalYMD(){const v=document.getElementById('calInput')?.value;return v?v.split('-').map(Number):todayYMD();}
 function setCalDate(y,m,d){
   const inp=document.getElementById('calInput');
-  if(inp)inp.value=`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+  if(inp)inp.value=`${String(y).padStart(4,'0')}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
   convertCalendar();
 }
 function convertCalendar(){
@@ -1376,79 +1645,87 @@ function convertCalendar(){
   renderCalResults(gregorianToJDN(y,m,d));
 }
 function convertCalendarManual(){
-  const sys=document.getElementById('calInputSystem')?.value;
-  const day=parseInt(document.getElementById('calManDay')?.value);
-  const month=parseInt(document.getElementById('calManMonth')?.value);
-  const year=parseInt(document.getElementById('calManYear')?.value);
-  const hint=document.getElementById('calManHint');
-  const hints={hijri:'Enter Hijri date (AH) — month 1-12',persian:'Enter Solar Hijri / Jalali date (SH)',hebrew:'Enter Hebrew date (AM) — month 1-13',ethiopian:'Enter Ethiopian date (EC) — 13 months per year',coptic:'Enter Coptic date (AM) — 13 months per year'};
-  if(hint) hint.textContent = hints[sys] || '';
-  if(!day||!month||!year||isNaN(year))return;
-  try{
-    let jdn;
-    switch(sys){
-      case 'hijri':     jdn=hijriToJDN(year,month,day); break;
-      case 'persian':   jdn=persianToJDN(year,month,day); break;
-      case 'ethiopian': jdn=ethiopianToJDN(year,month,day); break;
-      case 'coptic':    jdn=copticToJDN(year,month,day); break;
-      case 'hebrew':    jdn=hebrewToJDN(year,month,day); break;
-      default: return;
-    }
-    if(jdn&&!isNaN(jdn)){
-      const g=jdnToGregorian(jdn);
-      const inp=document.getElementById('calInput');
-      if(inp)inp.value=`${g.y}-${String(g.m).padStart(2,'0')}-${String(g.d).padStart(2,'0')}`;
-      renderCalResults(jdn);
-    }
-  }catch(e){}
+  const sys = document.getElementById('calInputSystem')?.value;
+  const Y = parseInt(document.getElementById('calManYear')?.value);
+  const mi = parseInt(document.getElementById('calManMonth')?.value);
+  const day = parseInt(document.getElementById('calManDay')?.value);
+  const out = document.getElementById('calRevResult');
+  const isHijriUQ = sys === 'islamic-umalqura';
+  const hint = document.getElementById('calManHint');
+  if (hint) hint.textContent = isHijriUQ && getHijriAdj() ? `Includes your ${getHijriAdj() > 0 ? '+' : ''}${getHijriAdj()} day Hijri adjustment` : '';
+  if (!Y || isNaN(mi) || !day) { if (out) out.textContent = ''; return; }
+  const months = calYearInfo(sys, Y);
+  const mo = months && months[mi];
+  if (!mo) { if (out) out.textContent = 'This browser cannot convert that calendar.'; return; }
+  if (day < 1 || day > mo.len) { if (out) out.textContent = `${mo.name} ${Y} has ${mo.len} days.`; return; }
+  const jdn = mo.start + day - 1 - (isHijriUQ ? getHijriAdj() : 0);
+  const g = jdnToGregorian(jdn);
+  const inp = document.getElementById('calInput');
+  if (inp) inp.value = `${String(g.y).padStart(4,'0')}-${String(g.m).padStart(2,'0')}-${String(g.d).padStart(2,'0')}`;
+  if (out) out.textContent = `= ${WD[(jdn+1)%7]}, ${g.d} ${GM[g.m]} ${g.y} CE`;
+  renderCalResults(jdn);
 }
+
 function renderCalResults(jdn){
-  const g=jdnToGregorian(jdn),hj=jdnToHijri(jdn),hb=jdnToHebrew(jdn);
-  const pr=jdnToPersian(jdn),et=jdnToEthiopian(jdn),co=jdnToCoptic(jdn);
-  const ju=jdnToJulian(jdn),bu=jdnToBuddhist(jdn),ja=jdnToJapanese(jdn),bh=jdnToBahai(jdn);
-  const dow=(jdn+1)%7;
-  const pad=n=>String(n).padStart(2,'0');
+  const g=jdnToGregorian(jdn), dow=(jdn+1)%7, pad=n=>String(n).padStart(2,'0');
+  const adj=getHijriAdj();
+  const fmt=(cal, j=jdn)=>{ const p=calParts(cal,j); if(!p) return null; return `${p.d} ${p.m} ${p.y} ${ERA_LABEL[cal]||p.era}`.trim(); };
+  const uq=fmt('islamic-umalqura', jdn+adj);
+  const arF=calFmt('islamic-umalqura','ar');
+  const uqAr=arF?new Intl.DateTimeFormat('ar',{timeZone:'UTC',weekday:'long'}).format(jdnToDate(jdn))+'، '+arF.format(jdnToDate(jdn+adj)):'';
+  const ch=calParts('chinese',jdn);
+  const jp=calParts('japanese',jdn);
+  const bu=calParts('buddhist',jdn);
+  const ju=jdnToJulian(jdn), bh=jdnToBahai(jdn);
+  const NA='Not supported in this browser';
   const cards=[
     {name:'Gregorian (CE)',flag:'🌍',date:`${g.d} ${GM[g.m]} ${g.y}`,sub:`${WD[dow]} · ${g.y}-${pad(g.m)}-${pad(g.d)}`,primary:true},
-    {name:'Hijri (Islamic)',flag:'☪️',date:`${hj.d} ${HIJRI_M[hj.m-1]||''} ${hj.y} AH`,sub:`${WD_AR[dow]}`},
-    {name:'Persian Solar Hijri',flag:'🇮🇷',date:`${pr.d} ${PERSIAN_M[(pr.m-1)%12]||''} ${pr.y} SH`,sub:'Jalali · Iran & Afghanistan'},
-    {name:'Hebrew (Jewish)',flag:'✡️',date:`${hb.d} ${HEBREW_M[(hb.m-1)%13]||''} ${hb.y} AM`,sub:`Anno Mundi · ${hebrewLeapYear(hb.y)?'Leap year':'Regular year'}`},
-    {name:'Ethiopian',flag:'🇪🇹',date:`${et.d} ${ETHIOPIAN_M[(et.m-1)%13]||''} ${et.y} EC`,sub:"Ge'ez · ~7–8 yrs behind Gregorian"},
-    {name:'Coptic',flag:'✝️',date:`${co.d} ${COPTIC_M[(co.m-1)%13]||''} ${co.y} AM`,sub:'Coptic Orthodox Church'},
-    {name:'Thai Buddhist',flag:'🇹🇭',date:`${bu.d} ${GM[bu.m]} ${bu.y} BE`,sub:'Buddhist Era · +543 years'},
-    {name:'Japanese Era',flag:'🇯🇵',date:`${ja.era} ${ja.y}, ${GM[ja.m]} ${ja.d}`,sub:'Imperial Japanese calendar'},
-    {name:"Bahá'í",flag:'⭐',date:bh.sp?`${bh.d} ${bh.sp} ${bh.y} BE`:`${bh.d} ${BAHAI_M[(bh.m-1)%19]||''} ${bh.y} BE`,sub:"Badíʻ · 19×19 calendar"},
-    {name:'Julian (Old Style)',flag:'🏛️',date:`${ju.d} ${GM[ju.m]||''} ${ju.y} OS`,sub:`Julian Day No. ${jdn}`},
-    {name:'Unix Timestamp',flag:'💻',date:`${Math.floor((jdn-2440588)*86400)}`,sub:'Seconds since 1 Jan 1970 UTC'},
+    {name:'Hijri — Umm al-Qura',flag:'☪️',date:uq||NA,sub:uqAr+(adj?` · adjusted ${adj>0?'+':''}${adj} day${Math.abs(adj)>1?'s':''}`:' · Official (Saudi Arabia)')},
+    {name:'Hijri — Tabular',flag:'🌙',date:fmt('islamic-civil')||NA,sub:'Arithmetic civil calendar'},
+    {name:'Coptic',flag:'✝️',date:fmt('coptic')||NA,sub:'Coptic Orthodox Church · Egypt'},
+    {name:'Persian Solar Hijri',flag:'🇮🇷',date:fmt('persian')||NA,sub:'Jalali · Iran & Afghanistan'},
+    {name:'Hebrew (Jewish)',flag:'✡️',date:fmt('hebrew')||NA,sub:'Anno Mundi'},
+    {name:'Ethiopian',flag:'🇪🇹',date:fmt('ethiopic')||NA,sub:'Geʼez calendar'},
+    {name:'Chinese lunisolar',flag:'🏮',date:ch?`${ch.d} ${ch.m}`:NA,sub:ch?`Year of the ${CHINESE_ANIMALS[((ch.y-4)%12+12)%12]} (${ch.yearName})`:''},
+    {name:'Indian National (Śaka)',flag:'🇮🇳',date:fmt('indian')||NA,sub:'Official civil calendar of India'},
+    {name:'Thai Buddhist',flag:'🇹🇭',date:bu?`${bu.d} ${bu.m} ${bu.y} BE`:NA,sub:'Buddhist Era'},
+    {name:'Japanese Era',flag:'🇯🇵',date:jp?`${jp.d} ${jp.m}, ${jp.era} ${jp.y}`:NA,sub:'Imperial era (Nengō)'},
+    {name:"Bahá'í (Badíʿ)",flag:'⭐',date:`${bh.d} ${bh.month} ${bh.y} BE`,sub:'Day begins at the previous sunset'},
+    {name:'Julian (Old Style)',flag:'🏛️',date:`${ju.d} ${GM[ju.m]} ${ju.y}`,sub:'Used by some Orthodox churches'},
+    {name:'Unix Timestamp',flag:'💻',date:`${(jdn-2440588)*86400}`,sub:'00:00 UTC on this date'},
   ];
   const grid=document.getElementById('calResults');
   if(!grid)return;
-  grid.innerHTML=cards.map(c=>`<div class="cal-card${c.primary?' primary':''}">
+  grid.innerHTML=cards.map((c,i)=>`<div class="cal-card${c.primary?' primary':''}">
     <div class="cal-card-flag">${c.flag}</div>
     <div class="cal-card-name">${c.name}</div>
     <div class="cal-card-date">${c.date}</div>
     <div class="cal-card-sub">${c.sub}</div>
-    <button onclick="navigator.clipboard?.writeText('${c.date.replace(/'/g,"\'")}').then(()=>showToast('Copied!'))" style="margin-top:6px;background:none;border:none;color:var(--muted);font-size:11px;font-family:var(--mono);cursor:pointer;padding:0;transition:color 0.15s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--muted)'">📋 copy</button>
+    <button onclick="copyCalCard(${i})" style="margin-top:6px;background:none;border:none;color:var(--muted);font-size:11px;font-family:var(--mono);cursor:pointer;padding:0;align-self:flex-start;">📋 copy</button>
   </div>`).join('');
+  window._calCards=cards;
   const isLeap=(g.y%4===0&&g.y%100!==0)||g.y%400===0;
   const doy=jdn-gregorianToJDN(g.y,1,1)+1;
-  const rem=(isLeap?366:365)-doy;
-  const todayJDN=gregorianToJDN(...todayYMD());
-  const diff=jdn-todayJDN;
-  const infoEl=document.getElementById('calDayInfo');
-  const infoCt=document.getElementById('calDayInfoContent');
+  const diff=jdn-gregorianToJDN(...todayYMD());
+  const hml=calFmt('islamic-umalqura')?hijriMonthLength(jdn+adj):null;
+  const infoEl=document.getElementById('calDayInfo'), infoCt=document.getElementById('calDayInfoContent');
   if(infoEl&&infoCt){
     infoEl.style.display='block';
     infoCt.innerHTML=[
       {l:'Day of Week',v:WD[dow]},
       {l:'Day of Year',v:`${doy} of ${isLeap?366:365}`},
-      {l:'Days Remaining',v:`${rem} days left`},
+      {l:'Days Remaining',v:`${(isLeap?366:365)-doy} days left`},
       {l:'Gregorian Leap',v:isLeap?'✓ Leap year':'✗ Regular year'},
-      {l:'Hijri Leap',v:[2,5,7,10,13,16,18,21,24,26,29].includes(hj.y%30)?'✓ Hijri leap':'✗ Hijri regular'},
+      {l:'Hijri Month Length',v:hml?`${hml} days`:'—'},
       {l:'Julian Day No.',v:jdn},
       {l:'Days from Today',v:diff===0?'Today':diff>0?`+${diff} days`:`${diff} days`},
     ].map(x=>`<div class="cal-info-item"><div class="cal-info-label">${x.l}</div><div class="cal-info-value">${x.v}</div></div>`).join('');
   }
+}
+function copyCalCard(i){
+  const c=(window._calCards||[])[i]; if(!c) return;
+  const text=c.date;
+  (navigator.clipboard?navigator.clipboard.writeText(text):Promise.reject()).then(()=>showToast('Copied!')).catch(()=>showToast(text));
 }
 
 /* ═══════════════════════════════════════
@@ -1540,7 +1817,7 @@ function renderDesk() {
   if (grid.children.length !== userZones.length) {
     grid.innerHTML = userZones.map((z,i) => {
       const acc = z.home ? '#c8f060' : '#6077f0';
-      const tzS = z.tz.split('/').pop().replace(/_/g,' ');
+      const tzS = tzDisplayName(z.tz);
       return `<div id="dc-${i}" data-tz="${z.tz}" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:${gapSz}px;padding:${Math.max(6,Math.round(ch*0.035))}px ${Math.max(6,Math.round(cw*0.03))}px;border-right:1px solid rgba(255,255,255,0.05);border-bottom:1px solid rgba(255,255,255,0.05);background:radial-gradient(ellipse at 40% 30%,#1a1a28 0%,#0a0a10 100%);position:relative;overflow:hidden;">
         <div style="font-size:${cityFz}px;font-weight:800;color:var(--text);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;">${z.label}${z.home?` <span style="font-size:${Math.max(7,cityFz*0.5)}px;font-family:var(--mono);color:${acc};background:rgba(200,240,96,0.12);border:1px solid rgba(200,240,96,0.25);padding:1px 5px;border-radius:6px;">HOME</span>`:''}</div>
         <div style="font-family:var(--mono);font-size:${dateFz}px;color:var(--muted);text-align:center;">${tzS}</div>
